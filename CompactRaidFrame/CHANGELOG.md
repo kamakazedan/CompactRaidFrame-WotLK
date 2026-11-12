@@ -1,5 +1,12 @@
 # Compact Raid Frames (3.3.5a) - changelog
 
+## 1.18
+
+- "Always show (even when solo)" is now off by default: when you are not in a
+  group, the raid frames and the raid manager stay hidden unless you tick it
+  (General tab). If you have already ticked or unticked it yourself, your
+  choice is kept.
+
 ## 1.17
 
 - Raid manager: a **Reset Position** button under Lock / Hide. It does the same

@@ -341,11 +341,13 @@ end
 
 -- "Always show (even when solo)". Account-wide, saved in CompactRaidFrameAccountDB
 -- (it used to live in a plain global that was never saved, so it reset to "on"
--- at every login). nil = never set = on, the historical default.
+-- at every login). nil = never set = off: since 1.18 the raid frames and the
+-- raid manager are hidden when solo unless the option is ticked (it used to
+-- default to on). A value the player saved, on or off, is kept.
 function CRF_IsAlwaysEnabled()
 	local value = CUF_CONFIG and CUF_CONFIG.alwaysShowSolo;
 	if ( value == nil ) then
-		return true;
+		return false;
 	end
 	return value and true or false;
 end
