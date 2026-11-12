@@ -1,5 +1,19 @@
 # Compact Raid Frames (3.3.5a) - changelog
 
+## 1.17
+
+- Raid manager: a **Reset Position** button under Lock / Hide. It does the same
+  as Reset Position on the options' General tab (and likewise says "You can't
+  do that while in combat" in combat).
+- Raid manager tab: while the manager is collapsed, the tab at the left edge of
+  the screen stays hidden until you move the mouse over it. It fades in under
+  the mouse and fades out half a second after the mouse leaves; it also works
+  in combat. Only the tab fades, never the raid frames. On by default; turn it
+  off with "Show raid manager tab only on mouseover" on the General tab (saved
+  account-wide).
+- Display tab: Frame Height and Frame Width show a percentage under the slider
+  (0% = smallest size, 100% = largest) that follows the slider as you drag.
+
 ## 1.16
 
 ### Options panel (Interface > AddOns > Raid Profiles)

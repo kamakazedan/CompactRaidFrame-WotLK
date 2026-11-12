@@ -533,9 +533,30 @@ function CompactUnitFrameProfilesSlider_Update(self)
 		self:SetValue(currentValue);
 		self.isUpdating = nil;
 	end
+	-- SetValue to the value it already has fires no OnValueChanged.
+	CompactUnitFrameProfilesSlider_UpdateValueText(self);
+end
+
+-- Shows how far along its range the slider is: 0% = smallest, 100% = largest.
+function CompactUnitFrameProfilesSlider_UpdateValueText(self, value)
+	local valueLabel = self.valueLabel;
+	if ( not valueLabel ) then
+		return;
+	end
+	local minValue, maxValue = self:GetMinMaxValues();
+	value = floor((value or self:GetValue() or minValue) + 0.5);
+	local percent = 0;
+	if ( maxValue > minValue ) then
+		percent = floor((value - minValue) / (maxValue - minValue) * 100 + 0.5);
+		percent = max(0, min(100, percent));
+	end
+	valueLabel:SetText(format("%d%%", percent));
 end
 
 function CompactUnitFrameProfilesSlider_OnValueChanged(self, value, userInput)
+	-- Before the checks below, so the number follows the thumb while dragging
+	-- and also updates when the panel sets the value itself.
+	CompactUnitFrameProfilesSlider_UpdateValueText(self, value);
 	if ( not userInput or self.isUpdating ) then
 		return;
 	end
@@ -668,6 +689,7 @@ local function CreateProfileSlider(page, suffix, optionName, minValue, maxValue,
 	slider.isUpdating = nil;
 	CompactUnitFrameProfilesSlider_SetTrack(slider);
 	CompactUnitFrameProfilesSlider_InitializeWidget(slider, optionName, minText, maxText);
+	CompactUnitFrameProfilesSlider_UpdateValueText(slider);
 	return slider;
 end
 
@@ -685,13 +707,20 @@ local function CreateGeneralPage(options, page)
 		CRF_IsAlwaysEnabled, CRF_SetAlwaysEnabled);
 	alwaysShow:SetPoint("TOPLEFT", raidStyle, "BOTTOMLEFT", 0, 0);
 
+	local tabMouseover = CreateAccountCheckButton(page, "ManagerTabMouseover",
+		CRF_MANAGER_TAB_MOUSEOVER or "Show raid manager tab only on mouseover",
+		CRF_MANAGER_TAB_MOUSEOVER_TOOLTIP,
+		CRF_IsManagerTabFadeEnabled, CRF_SetManagerTabFadeEnabled);
+	tabMouseover:SetPoint("TOPLEFT", alwaysShow, "BOTTOMLEFT", 0, 0);
+
 	-- Both anchors on the page's top edge: mixing TOPLEFT with a plain RIGHT
 	-- anchor would also pin the line's vertical centre and stretch it.
+	local ACCOUNT_ROWS = 3;
 	local divider = page:CreateTexture(page:GetName().."Divider", "ARTWORK");
 	divider:SetTexture(0.25, 0.25, 0.25);
 	divider:SetHeight(1);
-	divider:SetPoint("TOPLEFT", page, "TOPLEFT", 2, -(2 * 26 + 6));
-	divider:SetPoint("TOPRIGHT", page, "TOPRIGHT", -2, -(2 * 26 + 6));
+	divider:SetPoint("TOPLEFT", page, "TOPLEFT", 2, -(ACCOUNT_ROWS * 26 + 6));
+	divider:SetPoint("TOPRIGHT", page, "TOPRIGHT", -2, -(ACCOUNT_ROWS * 26 + 6));
 
 	local keepGroups = CreateProfileCheckButton(page, "KeepGroupsTogether", "keepGroupsTogether", function(self)
 		local currentValue = GetRaidProfileOption(CompactUnitFrameProfiles.selectedProfile, self.optionName);
@@ -704,7 +733,7 @@ local function CreateGeneralPage(options, page)
 		end
 		self:SetChecked(currentValue);
 	end);
-	keepGroups:SetPoint("TOPLEFT", alwaysShow, "BOTTOMLEFT", 0, -14);
+	keepGroups:SetPoint("TOPLEFT", tabMouseover, "BOTTOMLEFT", 0, -14);
 
 	-- Only one of these two is shown, depending on Keep Groups Together.
 	local horizontalGroups = CreateProfileCheckButton(page, "HorizontalGroups", "horizontalGroups");

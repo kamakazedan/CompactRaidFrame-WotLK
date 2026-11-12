@@ -359,3 +359,21 @@ function CRF_SetAlwaysEnabled(enabled)
 		CompactRaidFrameManager_UpdateAll(CompactRaidFrameManager);
 	end
 end
+
+-- "Show raid manager tab only on mouseover": while the raid manager is
+-- collapsed, its tab at the screen edge stays hidden until the mouse is over
+-- it. Account-wide; nil = never set = on. The manager polls this, so changing
+-- it needs no further update call (and is fine in combat: it only sets alpha).
+function CRF_IsManagerTabFadeEnabled()
+	local value = CUF_CONFIG and CUF_CONFIG.fadeManagerTab;
+	if ( value == nil ) then
+		return true;
+	end
+	return value and true or false;
+end
+
+function CRF_SetManagerTabFadeEnabled(enabled)
+	if ( CUF_CONFIG ) then
+		CUF_CONFIG.fadeManagerTab = enabled and true or false;
+	end
+end

@@ -35,6 +35,94 @@ local function  CompactRaidFrameManager_Toggle_OnLoad(self)
     toggleButton:GetNormalTexture():SetDrawLayer("OVERLAY");
 end
 
+-- "Show raid manager tab only on mouseover" (CRF_IsManagerTabFadeEnabled).
+-- While the manager is collapsed, the tab left on screen (its border art and the
+-- toggle button) fades out, and fades back in while the mouse is over it.
+-- Only those pieces are faded: the raid frame container is parented to the
+-- manager, so fading the manager itself would fade the raid frames as well.
+-- SetAlpha is allowed on secure frames in combat, so this also works in combat.
+local TAB_FADE_IN_TIME = 0.15;   -- seconds to fade in under the mouse
+local TAB_FADE_OUT_TIME = 0.4;   -- seconds to fade out
+local TAB_FADE_OUT_DELAY = 0.5;  -- seconds it stays after the mouse leaves
+
+local function CompactRaidFrameManager_SetTabAlpha(self, alpha)
+    self.tabAlpha = alpha;
+    for _, region in ipairs(self.tabRegions) do
+        region:SetAlpha(region.crfTabBaseAlpha * alpha);
+    end
+    self.toggleButton:SetAlpha(alpha);
+end
+
+-- The collapsed tab is the part of the manager still on screen, so this is
+-- simply "is the cursor inside the manager's rectangle".
+local function CompactRaidFrameManager_IsCursorOverTab(self)
+    local left, right = self:GetLeft(), self:GetRight();
+    local top, bottom = self:GetTop(), self:GetBottom();
+    if ( not (left and right and top and bottom) ) then
+        return false;
+    end
+    local x, y = GetCursorPosition();
+    local scale = self:GetEffectiveScale();
+    x, y = x / scale, y / scale;
+    return x >= left and x <= right and y >= bottom and y <= top;
+end
+
+local function CompactRaidFrameManager_TabFade_OnUpdate(watcher, elapsed)
+    local manager = watcher.manager;
+    local expanded = manager.displayFrame:IsShown();
+    local target = 1;
+    if ( expanded or not CRF_IsManagerTabFadeEnabled() or CompactRaidFrameManager_IsCursorOverTab(manager) ) then
+        watcher.awayTime = 0;
+    else
+        watcher.awayTime = watcher.awayTime + elapsed;
+        if ( watcher.awayTime >= TAB_FADE_OUT_DELAY ) then
+            target = 0;
+        end
+    end
+
+    local alpha = manager.tabAlpha;
+    if ( alpha == target ) then
+        return;
+    end
+    if ( expanded ) then
+        alpha = 1;  -- the open panel never fades
+    elseif ( alpha < target ) then
+        alpha = min(target, alpha + elapsed / TAB_FADE_IN_TIME);
+    else
+        alpha = max(target, alpha - elapsed / TAB_FADE_OUT_TIME);
+    end
+    CompactRaidFrameManager_SetTabAlpha(manager, alpha);
+end
+
+-- When the manager appears (joining a group, a loading screen, ...) start out
+-- hidden instead of flashing up and then fading.
+local function CompactRaidFrameManager_TabFade_OnShow(watcher)
+    local manager = watcher.manager;
+    if ( CRF_IsManagerTabFadeEnabled() and not manager.displayFrame:IsShown()
+        and not CompactRaidFrameManager_IsCursorOverTab(manager) ) then
+        watcher.awayTime = TAB_FADE_OUT_DELAY;
+        CompactRaidFrameManager_SetTabAlpha(manager, 0);
+    end
+end
+
+local function CompactRaidFrameManager_TabFade_OnLoad(self)
+    -- The manager's own textures: its border and background (the tab art).
+    self.tabRegions = { self:GetRegions() };
+    for _, region in ipairs(self.tabRegions) do
+        region.crfTabBaseAlpha = region:GetAlpha() or 1;
+    end
+    self.tabAlpha = 1;
+
+    -- A plain (non-secure) child, so its OnUpdate only runs while the manager
+    -- is on screen.
+    local watcher = CreateFrame("Frame", nil, self);
+    watcher.manager = self;
+    watcher.awayTime = 0;
+    watcher:SetScript("OnUpdate", CompactRaidFrameManager_TabFade_OnUpdate);
+    watcher:SetScript("OnShow", CompactRaidFrameManager_TabFade_OnShow);
+    self.tabFadeWatcher = watcher;
+end
+
 function CompactRaidFrameManager_OnLoad(self)
     self.container = CompactRaidFrameContainer;
     self.container:SetParent(self);
@@ -74,6 +162,9 @@ function CompactRaidFrameManager_OnLoad(self)
 
     -- CompactRaidFrameManager_Toggle
     CompactRaidFrameManager_Toggle_OnLoad(self)
+    CompactRaidFrameManager_TabFade_OnLoad(self);
+
+    self.displayFrame.resetPosition:SetText(RESET_POSITION or "Reset Position");
 
     --Set up the options flow container
     FlowContainer_Initialize(self.displayFrame.optionsFlowContainer);
@@ -271,11 +362,17 @@ function CompactRaidFrameManager_UpdateOptionsFlowContainer(self)
         FlowContainer_AddSpacer(container, 20);
         FlowContainer_AddObject(container, self.displayFrame.lockedModeToggle);
         FlowContainer_AddObject(container, self.displayFrame.hiddenModeToggle);
+        -- Reset Position on its own row under Lock / Hide.
+        FlowContainer_AddLineBreak(container);
+        FlowContainer_AddSpacer(container, 20);
+        FlowContainer_AddObject(container, self.displayFrame.resetPosition);
         self.displayFrame.lockedModeToggle:Show();
         self.displayFrame.hiddenModeToggle:Show();
+        self.displayFrame.resetPosition:Show();
     else
         self.displayFrame.lockedModeToggle:Hide();
         self.displayFrame.hiddenModeToggle:Hide();
+        self.displayFrame.resetPosition:Hide();
     end
     if ( IsInRaid() and UnitIsGroupLeader("player") ) then
         FlowContainer_AddLineBreak(container);

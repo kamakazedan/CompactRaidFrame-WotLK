@@ -102,6 +102,17 @@
             </Anchor>
           </Anchors>
         </FontString>
+        <!-- Current position as a percentage (0% = smallest, 100% = largest),
+             centred under the bar between the Low and High labels. -->
+        <FontString name="$parentValue" inherits="GameFontNormalSmall" parentKey="valueLabel">
+          <Anchors>
+            <Anchor point="TOP" relativePoint="BOTTOM">
+              <Offset>
+                <AbsDimension x="0" y="3" />
+              </Offset>
+            </Anchor>
+          </Anchors>
+        </FontString>
       </Layer>
     </Layers>
     <Scripts>

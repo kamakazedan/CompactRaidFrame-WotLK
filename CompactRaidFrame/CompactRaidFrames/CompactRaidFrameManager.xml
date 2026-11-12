@@ -481,6 +481,19 @@
               </OnClick>
             </Scripts>
           </Button>
+          <!-- Same action as Reset Position in the options panel (General tab).
+               Laid out under Lock / Hide by CompactRaidFrameManager_UpdateOptionsFlowContainer;
+               its text is set in CompactRaidFrameManager_OnLoad. -->
+          <Button name="$parentResetPosition" parentKey="resetPosition" inherits="CRF_UIMenuButtonStretchTemplate" hidden="true">
+            <Size x="169" y="20" />
+            <Scripts>
+              <OnClick>
+                if InCombatLockdown() then return DEFAULT_CHAT_FRAME:AddMessage(COMPACT_UNIT_FRAME_ERRCOMBAT); end
+                PlaySound("igMainMenuOptionCheckBoxOn");
+                CompactRaidFrameManager_ResetContainerPosition();
+              </OnClick>
+            </Scripts>
+          </Button>
           <Frame name="$parentRaidMarkers" parentKey="raidMarkers" hidden="true">
             <Size x="200" y="50" />
             <Frames>
