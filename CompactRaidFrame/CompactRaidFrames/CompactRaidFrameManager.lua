@@ -1231,6 +1231,13 @@ function CRFSort_Role(token1, token2)
     return CRFSort_Alphabetical(token1, token2);
 end
 
+-- The order players are listed in (Sort By, with Keep Me at the Top): the
+-- combined list uses it, and so do the members inside each separate group.
+function CRF_GetMemberSortFunction()
+    local container = CompactRaidFrameManager and CompactRaidFrameManager.container;
+    return container and container.flowSortFunc;
+end
+
 -- Wraps a sort function so the player's own frame comes first ("Keep Me at
 -- the Top"). Still a strict ordering: two non-player tokens (or the player
 -- against itself) fall through to the wrapped order.

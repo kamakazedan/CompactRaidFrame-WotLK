@@ -1,5 +1,25 @@
 # Compact Raid Frames (3.3.5a) - changelog
 
+## 1.27
+
+- Separate Groups: pets now sit right under the last player of their group.
+  Each group's frame kept room for 5 players even with fewer in it, so a party
+  of 2 had its pets 3 player-heights further down.
+  - Group frames are now as long as the players they show (party: you plus
+    the party members; raid groups: their members). With Display Border on,
+    the border fits the players too.
+  - Separate (Vertical): each group and its pets form one column, so pets sit
+    under their own group's last player even when groups have different sizes.
+  - When someone joins or leaves, the pets move with the last player (out of
+    combat; in combat when it ends, like the rest of the frames).
+- Separate Groups now follow Sort By inside each group (it only applied to
+  Combine Groups, and was hidden on the Layout tab when groups were separate):
+  - Party: with Sort By Role and Keep Me at the Top, you, then the tank, the
+    healer and damage dealers. Sort By Group keeps the party order.
+  - Raid: each group's members in the Sort By order (Group = raid order).
+  - Someone joining in combat still shows up at once, in order when combat
+    ends.
+
 ## 1.26
 
 - Separate Groups (Horizontal) with Display Pets: each group's pets now go in

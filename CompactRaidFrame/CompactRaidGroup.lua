@@ -68,20 +68,25 @@ function CompactRaidGroup_UpdateUnits(frame)
         for i=1, MEMBERS_PER_RAID_GROUP do
             CompactUnitFrame_SetUnit(_G[frame:GetName().."Member"..i], (i <= count) and "player" or nil);
         end
+        CompactRaidGroup_SetShownMembers(frame, count);
     elseif ( IsInRaid() ) then
-        -- In raid order; with "Keep Me at the Top" the player first in their group.
+        -- In the Sort By order (with "Keep Me at the Top": the player first).
+        local sortFunc = CRF_GetMemberSortFunction and CRF_GetMemberSortFunction();
         local playerFirst = CompactRaidFrameManager_GetSetting and CompactRaidFrameManager_GetSetting("SortPlayerFirst");
         playerFirst = playerFirst and playerFirst ~= "0";
         wipe(groupMembers);
         for i=1, GetNumGroupMembers() do
             local name, rank, subgroup = GetRaidRosterInfo(i);
             if ( subgroup == groupIndex ) then
-                if ( playerFirst and UnitIsUnit("raid"..i, "player") ) then
+                if ( playerFirst and not sortFunc and UnitIsUnit("raid"..i, "player") ) then
                     tinsert(groupMembers, 1, "raid"..i);
                 else
                     tinsert(groupMembers, "raid"..i);
                 end
             end
+        end
+        if ( sortFunc ) then
+            table.sort(groupMembers, sortFunc);
         end
         for i=1, min(#groupMembers, MEMBERS_PER_RAID_GROUP) do
             CompactUnitFrame_SetUnit(_G[frame:GetName().."Member"..frameIndex], groupMembers[i]);
@@ -92,6 +97,7 @@ function CompactRaidGroup_UpdateUnits(frame)
             local unitFrame = _G[frame:GetName().."Member"..i];
             CompactUnitFrame_SetUnit(unitFrame, nil);
         end
+        CompactRaidGroup_SetShownMembers(frame, frameIndex - 1);
     else
         -- Not in a raid, so the group frames are not in use: drop leftover
         -- units (placeholders from a preview, or the last raid's members).
@@ -101,6 +107,19 @@ function CompactRaidGroup_UpdateUnits(frame)
                 CompactUnitFrame_SetUnit(unitFrame, nil);
             end
         end
+    end
+end
+
+-- A group frame is as long as the members it shows (not always 5), so its
+-- border and anything under it (pets) sit right after the last member.
+function CompactRaidGroup_GetShownMembers(frame)
+    return max(1, min(frame.shownMembers or MEMBERS_PER_RAID_GROUP, MEMBERS_PER_RAID_GROUP));
+end
+
+function CompactRaidGroup_SetShownMembers(frame, count)
+    if ( frame.shownMembers ~= count ) then
+        frame.shownMembers = count;
+        CompactRaidGroup_UpdateLayout(frame);
     end
 end
 
@@ -123,7 +142,7 @@ function CompactRaidGroup_UpdateLayout(frame)
             unitFrame:SetPoint("LEFT", _G[frame:GetName().."Member"..(i-1)], "RIGHT", 0, 0);
         end
         totalHeight = totalHeight + _G[frame:GetName().."Member1"]:GetHeight();
-        totalWidth = totalWidth + _G[frame:GetName().."Member1"]:GetWidth() * MEMBERS_PER_RAID_GROUP;
+        totalWidth = totalWidth + _G[frame:GetName().."Member1"]:GetWidth() * CompactRaidGroup_GetShownMembers(frame);
     else
         frame.title:ClearAllPoints();
         frame.title:SetPoint("TOP");
@@ -137,7 +156,7 @@ function CompactRaidGroup_UpdateLayout(frame)
             unitFrame:ClearAllPoints();
             unitFrame:SetPoint("TOP", _G[frame:GetName().."Member"..(i-1)], "BOTTOM", 0, 0);
         end
-        totalHeight = totalHeight + _G[frame:GetName().."Member1"]:GetHeight() * MEMBERS_PER_RAID_GROUP;
+        totalHeight = totalHeight + _G[frame:GetName().."Member1"]:GetHeight() * CompactRaidGroup_GetShownMembers(frame);
         totalWidth = totalWidth + _G[frame:GetName().."Member1"]:GetWidth();
     end
 

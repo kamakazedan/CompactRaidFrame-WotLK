@@ -902,12 +902,8 @@ local function CreateLayoutPage(options, page)
 		function(self)
 			local layout = CRF_GetGroupLayout(CompactUnitFrameProfiles.selectedProfile);
 			C_UIDropDownMenu_SetText(self, CRF_GetGroupLayoutText(layout, true));
-			-- Sort By only applies when groups are combined.
-			if ( layout and not layout.keepGroupsTogether ) then
-				self.sortBy:Show();
-			else
-				self.sortBy:Hide();
-			end
+			-- (Sort By applies to every layout: with separate groups, inside each group.)
+			self.sortBy:Show();
 		end);
 	groups:SetPoint("TOPLEFT", page, "TOPLEFT", DROPDOWN_OFFSET_X, -16);
 

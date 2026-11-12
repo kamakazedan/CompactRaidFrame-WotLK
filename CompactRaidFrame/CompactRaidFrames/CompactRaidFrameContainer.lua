@@ -324,9 +324,51 @@ local function CompactRaidFrameContainer_AddPetRow(self, index, pets)
     return row;
 end
 
+-- "Separate Groups (Vertical)": a group and its pets as one column, the pets
+-- right under the last member (centred, as the members are). The column goes
+-- into the flow in the group's place; the group and pets are released with it.
+local function CompactRaidFrameContainer_GroupColumn_Unused(column)
+    if ( column.group and column.group.unusedFunc ) then
+        column.group:unusedFunc();
+    end
+    column.group = nil;
+    CompactRaidFrameContainer_PetRow_Unused(column);
+end
+
+local function CompactRaidFrameContainer_AddGroupColumn(self, index, id, pets)
+    self.groupColumns = self.groupColumns or {};
+    local column = self.groupColumns[index];
+    if ( not column ) then
+        column = CreateFrame("Frame", nil, self);
+        column.pets = {};
+        column.unusedFunc = CompactRaidFrameContainer_GroupColumn_Unused;
+        self.groupColumns[index] = column;
+    end
+    local groupFrame = CompactRaidFrameContainer_PrepareGroup(self, id);
+    column.group = groupFrame;
+    groupFrame:ClearAllPoints();
+    groupFrame:SetPoint("TOPLEFT", column, "TOPLEFT", 0, 0);
+    wipe(column.pets);
+    local height = groupFrame:GetHeight();
+    local above = groupFrame;
+    for i=1, #pets do
+        local petFrame = CompactRaidFrameContainer_GetUnitFrame(self, pets[i], "pet");
+        CompactUnitFrame_SetUnit(petFrame, pets[i]);
+        petFrame:ClearAllPoints();
+        petFrame:SetPoint("TOP", above, "BOTTOM", 0, 0);
+        height = height + petFrame:GetHeight();
+        above = petFrame;
+        tinsert(column.pets, petFrame);
+    end
+    column:SetSize(groupFrame:GetWidth(), height);
+    column:Show();
+    FlowContainer_AddObject(self, column);
+    return column;
+end
+
 do
     local usedGroups = {}; --Enclosure to make sure usedGroups isn't used anywhere else.
-    local groupIDs, groupPets, groupFrames = {}, {}, {};
+    local groupIDs, groupPets = {}, {};
     -- With Display Pets, each group's pets go under that group (and the
     -- function returns true: the pets are placed).
     function CompactRaidFrameContainer_AddGroups(self)
@@ -363,56 +405,15 @@ do
             end
         else
             -- Columns of groups, side by side: each group's pets in a column
-            -- under it. The groups go in line by line, breaking where the flow
-            -- would wrap anyway, and every line of groups is followed by rows
-            -- of pets: row k holds the k-th pet of each group, with spacers
-            -- for groups that have fewer, so each pet sits under its own group.
-            local spacing = self.flowHorizontalSpacing or 0;
-            local perLine;
-            local i = 1;
-            while ( i <= #groupIDs ) do
-                local groupFrame = CompactRaidFrameContainer_AddGroup(self, groupIDs[i]);
-                local groupWidth = groupFrame:GetWidth();
-                if ( not perLine ) then
-                    perLine = max(1, floor((self:GetWidth() - groupWidth) / (groupWidth + spacing)) + 1);
+            -- right under its last member (a column frame holds both).
+            for i=1, #groupIDs do
+                groupPets[i] = groupPets[i] or {};
+                local pets = CompactRaidFrameContainer_GetGroupPets(self, groupIDs[i], groupPets[i]);
+                if ( #pets > 0 ) then
+                    CompactRaidFrameContainer_AddGroupColumn(self, i, groupIDs[i], pets);
+                else
+                    CompactRaidFrameContainer_AddGroup(self, groupIDs[i]);
                 end
-                local lineEnd = min(#groupIDs, i + perLine - 1);
-                wipe(groupFrames);
-                groupFrames[i] = groupFrame;
-                for j=i + 1, lineEnd do
-                    groupFrames[j] = CompactRaidFrameContainer_AddGroup(self, groupIDs[j]);
-                end
-                local rows = 0;
-                for j=i, lineEnd do
-                    groupPets[j] = groupPets[j] or {};
-                    CompactRaidFrameContainer_GetGroupPets(self, groupIDs[j], groupPets[j]);
-                    rows = max(rows, #groupPets[j]);
-                end
-                if ( rows > 0 or lineEnd < #groupIDs ) then
-                    FlowContainer_AddLineBreak(self);
-                end
-                for row=1, rows do
-                    for j=i, lineEnd do
-                        local width = groupFrames[j]:GetWidth();
-                        local unit = groupPets[j][row];
-                        if ( unit ) then
-                            -- centred under the group's members (a group with a border is wider)
-                            local petFrame = CompactRaidFrameContainer_GetUnitFrame(self, unit, "pet");
-                            local inset = max(0, (width - petFrame:GetWidth()) / 2);
-                            if ( inset > 0 ) then
-                                FlowContainer_AddSpacer(self, inset);
-                            end
-                            CompactRaidFrameContainer_AddUnitFrame(self, unit, "pet");
-                            if ( inset > 0 ) then
-                                FlowContainer_AddSpacer(self, inset);
-                            end
-                        else
-                            FlowContainer_AddSpacer(self, width + spacing);
-                        end
-                    end
-                    FlowContainer_AddLineBreak(self);
-                end
-                i = lineEnd + 1;
             end
         end
         CompactRaidFrameContainer_SetGroupsArrangement(self);
@@ -440,13 +441,26 @@ function CompactRaidFrameContainer_SetPlayersArrangement(self)
 end
 
 function CompactRaidFrameContainer_AddGroup(self, id)
+    local groupFrame = CompactRaidFrameContainer_PrepareGroup(self, id);
+    FlowContainer_AddObject(self, groupFrame);
+    return groupFrame;
+end
+
+-- The group's frame, set up and shown, but not yet placed.
+function CompactRaidFrameContainer_PrepareGroup(self, id)
     local groupFrame, didCreation;
 
     if ( type(id) == "number" ) then
         groupFrame, didCreation = CompactRaidGroup_GenerateForGroup(id);
+        if ( not didCreation ) then
+            -- Current members (and so the group's length) before it is placed,
+            -- whichever of the group and the container sees a roster change first.
+            CompactRaidGroup_UpdateUnits(groupFrame);
+        end
     elseif ( id == "PARTY" ) then
         groupFrame, didCreation = CompactPartyFrame_Generate();
         CompactPartyFrame_UpdateTitle(groupFrame);
+        CompactPartyFrame_UpdateUnits(groupFrame);
     else
         error("Unknown id");
     end
@@ -458,8 +472,6 @@ function CompactRaidFrameContainer_AddGroup(self, id)
         tinsert(self.frameUpdateList.normal, groupFrame);
         tinsert(self.frameUpdateList.group, groupFrame);
     end
-
-    FlowContainer_AddObject(self, groupFrame);
 
     groupFrame:Show();
     return groupFrame;
