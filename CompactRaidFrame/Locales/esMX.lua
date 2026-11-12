@@ -1,53 +1,63 @@
 if ( GetLocale() ~= "esMX" ) then return end
 
-AUTO_ACTIVATE_DISABLED_IN_PARTY = "Hay que habilitar los marcos de grupo con estilo de banda para permitir la autoactivación del perfil con este número de jugadores."
-USE_RAID_STYLE_PARTY_FRAMES = "Usar marcos de grupo estilo banda"
-CREATE_NEW_COMPACT_UNIT_FRAME_PROFILE = "Crear perfil nuevo"
-AUTO_ACTIVATE_ON = "Autoactivar perfil con:"
-AUTO_ACTIVATE_PROFILE_NO_ENEMYTYPE = "El perfil nunca se autoactivará. Hay que seleccionar JcJ o JcE."
-AUTO_ACTIVATE_PROFILE_NO_SIZE = "El perfil nunca se autoactivará. No se ha seleccionado ningún tamaño de grupo."
-RESET_POSITION = "Restablecer posición"
-DONT_SAVE = "No guardar"
-NEW_COMPACT_UNIT_FRAME_PROFILE = "Perfil nuevo"
-USE_EXISTING_PROFILE = "Usar como punto de partida:"
-GROUP_NUMBER = "Grupo %d"
-TALL = "Alto"
-NARROW = "Estrecho"
-WIDE = "Ancho"
-UNLOCK = "Desbloquear"
-SHOW = "Mostrar"
-ALL_ASSIST_LABEL_LONG = "Hacer a todos ayudantes"
-ALL_ASSIST_DESCRIPTION = "Si está seleccionado, todos los miembros de la banda tendrán los permisos de un ayudante de banda."
-ALL_ASSIST_NOT_LEADER_ERROR = "Solo el líder de banda puede cambiar esta opción."
-RAID_MEMBERS = "Miembros"
-PARTY_MEMBERS = "Miembros"
-ROLE_POLL = "Verificar roles"
-CONFIRM_COMPACT_UNIT_FRAME_PROFILE_UNSAVED_CHANGES = "|cffffffff%s|r contiene cambios no guardados que se perderán al realizar esta acción. ¿Quieres guardar antes de continuar?"
-CONFIRM_COMPACT_UNIT_FRAME_PROFILE_DELETION = "¿Seguro que quieres eliminar permanentemente |cffffffff%s|r?"
-OPTION_TOOLTIP_USE_RAID_STYLE_PARTY_FRAMES = "Usa marcos de grupo con estilo de marcos de banda. Estos marcos obedecen a tus opciones de marco de banda."
-COMPACT_UNIT_FRAME_PROFILES_LABEL = "Perfiles de banda"
-COMPACT_UNIT_FRAME_PROFILE_AUTOACTIVATE2PLAYERS = "Grupo de 2 jugadores"
-COMPACT_UNIT_FRAME_PROFILE_AUTOACTIVATE3PLAYERS = "Grupo de 3 jugadores"
-COMPACT_UNIT_FRAME_PROFILE_AUTOACTIVATE5PLAYERS = "Grupo de 5 jugadores"
-COMPACT_UNIT_FRAME_PROFILE_AUTOACTIVATE10PLAYERS = "Grupo de 10 jugadores"
-COMPACT_UNIT_FRAME_PROFILE_AUTOACTIVATE15PLAYERS = "Grupo de 15 jugadores"
-COMPACT_UNIT_FRAME_PROFILE_AUTOACTIVATE25PLAYERS = "Grupo de 25 jugadores"
-COMPACT_UNIT_FRAME_PROFILE_AUTOACTIVATE40PLAYERS = "Grupo de 40 jugadores"
-COMPACT_UNIT_FRAME_PROFILE_AUTOACTIVATEPVE = "JcE"
-COMPACT_UNIT_FRAME_PROFILE_DISPLAYAGGROHIGHLIGHT = "Mostrar resaltado de agro"
-COMPACT_UNIT_FRAME_PROFILE_DISPLAYBORDER = "Mostrar borde"
-COMPACT_UNIT_FRAME_PROFILE_DISPLAYMAINTANKANDASSIST = "Mostrar al tanque principal y al ayudante"
-COMPACT_UNIT_FRAME_PROFILE_DISPLAYONLYDISPELLABLEDEBUFFS = "Mostrar solo perjuicios disipables"
-COMPACT_UNIT_FRAME_PROFILE_DISPLAYPETS = "Mostrar mascotas"
-COMPACT_UNIT_FRAME_PROFILE_DISPLAYPOWERBAR = "Mostrar barras de poder"
-COMPACT_UNIT_FRAME_PROFILE_FRAMEHEIGHT = "Altura de marco"
-COMPACT_UNIT_FRAME_PROFILE_FRAMEWIDTH = "Anchura de marco"
-COMPACT_UNIT_FRAME_PROFILE_HEALTHTEXT = "Mostrar texto de salud"
-COMPACT_UNIT_FRAME_PROFILE_HEALTHTEXT_HEALTH = "Salud restante"
-COMPACT_UNIT_FRAME_PROFILE_HEALTHTEXT_LOSTHEALTH = "Salud perdida"
-COMPACT_UNIT_FRAME_PROFILE_HEALTHTEXT_PERC = "Porcentaje de salud"
-COMPACT_UNIT_FRAME_PROFILE_HORIZONTALGROUPS = "Grupos en horizontal"
-COMPACT_UNIT_FRAME_PROFILE_KEEPGROUPSTOGETHER = "Mantener al grupo junto"
-COMPACT_UNIT_FRAME_PROFILE_SORTBY = "Ordenar por:"
-COMPACT_UNIT_FRAME_PROFILE_SORTBY_ALPHABETICAL = "Alfabético"
-COMPACT_UNIT_FRAME_PROFILE_USECLASSCOLORS = "Mostrar color de clase"
+-- Only overrides strings the client doesn't define itself (see enUS.lua).
+local L = CRF_SetLocaleString
+
+L("AUTO_ACTIVATE_DISABLED_IN_PARTY", "Hay que habilitar los marcos de grupo con estilo de banda para permitir la autoactivación del perfil con este número de jugadores.")
+L("USE_RAID_STYLE_PARTY_FRAMES", "Usar marcos de grupo estilo banda")
+L("CREATE_NEW_COMPACT_UNIT_FRAME_PROFILE", "Crear perfil nuevo")
+L("AUTO_ACTIVATE_ON", "Autoactivar perfil con:")
+L("AUTO_ACTIVATE_PROFILE_NO_ENEMYTYPE", "El perfil nunca se autoactivará. Hay que seleccionar JcJ o JcE.")
+L("AUTO_ACTIVATE_PROFILE_NO_SIZE", "El perfil nunca se autoactivará. No se ha seleccionado ningún tamaño de grupo.")
+L("RESET_POSITION", "Restablecer posición")
+L("DONT_SAVE", "No guardar")
+L("NEW_COMPACT_UNIT_FRAME_PROFILE", "Perfil nuevo")
+L("USE_EXISTING_PROFILE", "Usar como punto de partida:")
+L("GROUP_NUMBER", "Grupo %d")
+L("TALL", "Alto")
+L("NARROW", "Estrecho")
+L("WIDE", "Ancho")
+L("UNLOCK", "Desbloquear")
+L("SHOW", "Mostrar")
+L("ALL_ASSIST_LABEL_LONG", "Hacer a todos ayudantes")
+L("ALL_ASSIST_DESCRIPTION", "Si está seleccionado, todos los miembros de la banda tendrán los permisos de un ayudante de banda.")
+L("ALL_ASSIST_NOT_LEADER_ERROR", "Solo el líder de banda puede cambiar esta opción.")
+L("RAID_MEMBERS", "Miembros")
+L("PARTY_MEMBERS", "Miembros")
+L("ROLE_POLL", "Verificar roles")
+L("CONFIRM_COMPACT_UNIT_FRAME_PROFILE_UNSAVED_CHANGES", "|cffffffff%s|r contiene cambios no guardados que se perderán al realizar esta acción. ¿Quieres guardar antes de continuar?")
+L("CONFIRM_COMPACT_UNIT_FRAME_PROFILE_DELETION", "¿Seguro que quieres eliminar permanentemente |cffffffff%s|r?")
+L("OPTION_TOOLTIP_USE_RAID_STYLE_PARTY_FRAMES", "Usa marcos de grupo con estilo de marcos de banda. Estos marcos obedecen a tus opciones de marco de banda.")
+L("COMPACT_UNIT_FRAME_PROFILES_LABEL", "Perfiles de banda")
+L("COMPACT_UNIT_FRAME_PROFILE_AUTOACTIVATE2PLAYERS", "Grupo de 2 jugadores")
+L("COMPACT_UNIT_FRAME_PROFILE_AUTOACTIVATE3PLAYERS", "Grupo de 3 jugadores")
+L("COMPACT_UNIT_FRAME_PROFILE_AUTOACTIVATE5PLAYERS", "Grupo de 5 jugadores")
+L("COMPACT_UNIT_FRAME_PROFILE_AUTOACTIVATE10PLAYERS", "Grupo de 10 jugadores")
+L("COMPACT_UNIT_FRAME_PROFILE_AUTOACTIVATE15PLAYERS", "Grupo de 15 jugadores")
+L("COMPACT_UNIT_FRAME_PROFILE_AUTOACTIVATE25PLAYERS", "Grupo de 25 jugadores")
+L("COMPACT_UNIT_FRAME_PROFILE_AUTOACTIVATE40PLAYERS", "Grupo de 40 jugadores")
+L("COMPACT_UNIT_FRAME_PROFILE_AUTOACTIVATEPVE", "JcE")
+L("COMPACT_UNIT_FRAME_PROFILE_DISPLAYAGGROHIGHLIGHT", "Mostrar resaltado de agro")
+L("COMPACT_UNIT_FRAME_PROFILE_DISPLAYBORDER", "Mostrar borde")
+L("COMPACT_UNIT_FRAME_PROFILE_DISPLAYMAINTANKANDASSIST", "Mostrar al tanque principal y al ayudante")
+L("COMPACT_UNIT_FRAME_PROFILE_DISPLAYONLYDISPELLABLEDEBUFFS", "Mostrar solo perjuicios disipables")
+L("COMPACT_UNIT_FRAME_PROFILE_DISPLAYPETS", "Mostrar mascotas")
+L("COMPACT_UNIT_FRAME_PROFILE_DISPLAYPOWERBAR", "Mostrar barras de poder")
+L("COMPACT_UNIT_FRAME_PROFILE_FRAMEHEIGHT", "Altura de marco")
+L("COMPACT_UNIT_FRAME_PROFILE_FRAMEWIDTH", "Anchura de marco")
+L("COMPACT_UNIT_FRAME_PROFILE_HEALTHTEXT", "Mostrar texto de salud")
+L("COMPACT_UNIT_FRAME_PROFILE_HEALTHTEXT_HEALTH", "Salud restante")
+L("COMPACT_UNIT_FRAME_PROFILE_HEALTHTEXT_LOSTHEALTH", "Salud perdida")
+L("COMPACT_UNIT_FRAME_PROFILE_HEALTHTEXT_PERC", "Porcentaje de salud")
+L("COMPACT_UNIT_FRAME_PROFILE_HORIZONTALGROUPS", "Grupos en horizontal")
+L("COMPACT_UNIT_FRAME_PROFILE_KEEPGROUPSTOGETHER", "Mantener al grupo junto")
+L("COMPACT_UNIT_FRAME_PROFILE_SORTBY", "Ordenar por:")
+L("COMPACT_UNIT_FRAME_PROFILE_SORTBY_ALPHABETICAL", "Alfabético")
+L("COMPACT_UNIT_FRAME_PROFILE_USECLASSCOLORS", "Mostrar color de clase")
+
+-- Options panel tabs and the "Always show" option (this addon's own strings)
+L("CRF_OPTIONS_TAB_GENERAL", "General")
+L("CRF_OPTIONS_TAB_DISPLAY", "Visualización")
+L("CRF_OPTIONS_TAB_AUTOACTIVATE", "Autoactivación")
+L("CRF_ALWAYS_SHOW_SOLO", "Mostrar siempre (incluso en solitario)")
+L("CRF_ALWAYS_SHOW_SOLO_TOOLTIP", "Muestra los marcos de banda y el gestor de banda aunque no estés en un grupo.")

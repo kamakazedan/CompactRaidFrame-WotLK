@@ -8,14 +8,8 @@ local PartyMemberBackground = PartyMemberBackground
 local PartyMemberFrame_OnLoad = PartyMemberFrame_OnLoad
 local SecureUnitButton_OnLoad = SecureUnitButton_OnLoad
 
--- "Always show" option (the checkbox in the raid manager panel). Saved in the
--- CRF_AlwaysShow SavedVariable; nil (never set) means ON.
-function CRF_IsAlwaysEnabled()
-	if ( CRF_AlwaysShow == nil ) then
-		return true
-	end
-	return CRF_AlwaysShow and true or false
-end
+-- CRF_IsAlwaysEnabled() ("Always show (even when solo)") lives in
+-- CUFProfiles\CUFProfilesAPI.lua next to the saved account settings.
 
 local PARTY_FRAME_DISABLED
 local PARTY_FRAME_DISPLAY = "party"
@@ -35,7 +29,7 @@ function GetDisplayedAllyFrames()
 		return "party"
 	end
 
-	if ( CRF_IsAlwaysEnabled() ) then
+	if ( CRF_IsAlwaysEnabled and CRF_IsAlwaysEnabled() ) then
 		return "raid"
 	end
 

@@ -1413,8 +1413,18 @@ end
 
 local function CompactUnitFrameDropDown_SecureFocus()
     if ( secureFocus ) then
-        local menuActive = UnitPopupMenus[UIDROPDOWNMENU_INIT_MENU.which];
-        local menuShown = UnitPopupShown[1]
+        -- "Set Focus" from an addon-built menu is blocked (FocusUnit is
+        -- protected), so hide it. UIDROPDOWNMENU_INIT_MENU is the dropdown
+        -- frame on 3.1+ but was its name before; accept both.
+        local dropdown = UIDROPDOWNMENU_INIT_MENU;
+        if ( type(dropdown) == "string" ) then
+            dropdown = _G[dropdown];
+        end
+        local menuActive = dropdown and dropdown.which and UnitPopupMenus[dropdown.which];
+        local menuShown = UnitPopupShown and UnitPopupShown[1];
+        if ( not menuActive or not menuShown ) then
+            return;
+        end
         for i=1,#menuActive do
             local value = menuActive[i];
             if ( value == "SET_FOCUS" and menuShown[i] == 1 ) then

@@ -95,6 +95,7 @@ local function RelayGroupRosterUpdate()
 end
 
 local relay = CreateFrame("Frame")
+relay:Hide()   -- its OnUpdate only runs while a roster refresh is pending (see below)
 relay:RegisterEvent("PARTY_MEMBERS_CHANGED")   -- 3.3.5a party composition change
 relay:RegisterEvent("RAID_ROSTER_UPDATE")      -- 3.3.5a raid composition change
 relay:RegisterEvent("PARTY_LEADER_CHANGED")
@@ -141,11 +142,20 @@ local function ScheduleRoleRefresh()
     C_Timer.After(2, RoleRefresh)
 end
 
+-- Coalesced to one pass per frame: in a raid PARTY_MEMBERS_CHANGED and
+-- RAID_ROSTER_UPDATE both fire for the same change, and RAID_ROSTER_UPDATE also
+-- fires whenever a member zones or goes on/offline. Each event used to re-lay
+-- out the container and refresh every unit frame on its own.
+relay:SetScript("OnUpdate", function(self)
+    self:Hide()
+    RelayGroupRosterUpdate()
+end)
+
 relay:SetScript("OnEvent", function(self, event)
     if event == "PLAYER_ROLES_ASSIGNED" then
         ScheduleRoleRefresh()
     else
-        RelayGroupRosterUpdate()
+        self:Show()   -- run RelayGroupRosterUpdate on the next frame
     end
 end)
 

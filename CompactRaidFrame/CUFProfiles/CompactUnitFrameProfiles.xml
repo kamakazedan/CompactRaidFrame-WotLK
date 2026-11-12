@@ -4,6 +4,12 @@
   <Script file="CompactUnitFrameProfiles.lua" />
   <Script file="CUFProfilesAPI.lua" />
 
+  <!--
+    Widget templates for the "Raid Profiles" options panel. The panel's option
+    controls (the General / Display / Auto-Activate tabs) are created from these
+    in Lua by CompactUnitFrameProfiles_CreateOptions(), so the whole layout
+    fits inside the 3.3.5a Interface Options panel (about 413 x 428).
+  -->
   <Frame name="CompactUnitFrameProfilesDropdownTemplate" inherits="UIDropDownMenuTemplate" virtual="true">
     <Layers>
       <Layer level="BACKGROUND">
@@ -19,9 +25,6 @@
       </Layer>
     </Layers>
     <Scripts>
-      <!--OnLoad>
-        CompactUnitFrameProfilesDropdown_InitializeWidget(self);
-      </OnLoad -->
       <OnShow>
         CompactUnitFrameProfilesDropdown_OnShow(self);
       </OnShow>
@@ -48,9 +51,6 @@
       </Layer>
     </Layers>
     <Scripts>
-      <!--OnLoad>
-        CompactUnitFrameProfilesCheckButton_Initialize(self);
-      </OnLoad -->
       <OnClick>
         CompactUnitFrameProfilesCheckButton_OnClick(self, button);
       </OnClick>
@@ -61,13 +61,7 @@
         self.label:SetFontObject(GameFontDisableLeft);
       </OnDisable>
       <OnEnter>
-        if ( not self:IsEnabled() ) then
-          if ( self.disabledTooltip ) then
-            GameTooltip:SetOwner(self, "ANCHOR_RIGHT");
-            GameTooltip:SetText(self.disabledTooltip, nil, nil, nil, nil, true);
-            GameTooltip:Show();
-          end
-        end
+        CompactUnitFrameProfilesCheckButton_OnEnter(self);
       </OnEnter>
       <OnLeave>
         if ( GameTooltip:GetOwner() == self ) then
@@ -81,7 +75,7 @@
     <CheckedTexture file="Interface\Buttons\UI-CheckBox-Check" />
     <DisabledCheckedTexture file="Interface\Buttons\UI-CheckBox-Check-Disabled" />
   </CheckButton>
-  <Slider name="CompactUnitFrameProfilesSliderTemplate" inherits="HorizontalSliderTemplate" virtual="true">
+  <Slider name="CompactUnitFrameProfilesSliderTemplate" inherits="CRF_HorizontalSliderTemplate" virtual="true">
     <Size x="144" y="17" />
     <Layers>
       <Layer level="ARTWORK">
@@ -192,73 +186,40 @@
       </Layer>
     </Layers>
     <Frames>
+      <!-- Profile row: [ profile dropdown ] [Save] [Delete]. Everything below it
+           (the tabbed option pages) is built in Lua. -->
       <Frame name="$parentProfileSelector" inherits="UIDropDownMenuTemplate">
         <Anchors>
-          <Anchor point="TOPLEFT" relativeTo="$parentTitle" relativePoint="BOTTOMLEFT" x="-15" y="-20" />
+          <Anchor point="TOPLEFT" relativeTo="$parent" relativePoint="TOPLEFT" x="1" y="-46" />
         </Anchors>
         <Scripts>
           <OnShow function="CompactUnitFrameProfilesProfileSelector_SetUp" />
         </Scripts>
       </Frame>
       <Button name="$parentSaveButton" inherits="UIPanelButtonTemplate2" text="SAVE">
-        <Size x="115" y="21" />
+        <Size x="86" y="22" />
         <Anchors>
-          <Anchor point="TOPLEFT" relativeTo="$parentProfileSelector" relativePoint="BOTTOMLEFT" x="18" y="5" />
+          <Anchor point="LEFT" relativeTo="$parentProfileSelector" relativePoint="RIGHT" x="-8" y="2" />
         </Anchors>
         <Scripts>
           <OnClick>
-            PlaySoundFile(SOUNDKIT.IG_MAINMENU_OPTION_CHECKBOX_ON);
+            PlaySound("igMainMenuOptionCheckBoxOn");
             CompactUnitFrameProfiles_SaveChanges(CompactUnitFrameProfiles);
           </OnClick>
         </Scripts>
       </Button>
       <Button name="$parentDeleteButton" inherits="UIPanelButtonTemplate2" text="DELETE">
+        <Size x="86" y="22" />
         <Anchors>
-          <Anchor point="TOPRIGHT" relativeTo="$parentProfileSelector" relativePoint="BOTTOMRIGHT" x="-15" y="5" />
-          <Anchor point="BOTTOMLEFT" relativeTo="$parentSaveButton" relativePoint="BOTTOMRIGHT" x="3" y="0" />
+          <Anchor point="LEFT" relativeTo="$parentSaveButton" relativePoint="RIGHT" x="4" y="0" />
         </Anchors>
         <Scripts>
           <OnClick>
-            PlaySoundFile(SOUNDKIT.IG_MAINMENU_OPTION_CHECKBOX_ON);
+            PlaySound("igMainMenuOptionCheckBoxOn");
             CompactUnitFrameProfiles_ConfirmProfileDeletion(GetActiveRaidProfile());
           </OnClick>
         </Scripts>
       </Button>
-      <CheckButton name="$parentRaidStylePartyFrames" inherits="InterfaceOptionsCheckButtonTemplate">
-        <Anchors>
-          <Anchor point="TOPLEFT" relativeTo="$parent" relativePoint="TOPRIGHT" x="-260" y="-8" />
-        </Anchors>
-        <Scripts>
-          <OnLoad>
-            self.type = CONTROLTYPE_CHECKBOX;
-            self.CVar = "useCompactPartyFrames"
-            self.tooltipText = OPTION_TOOLTIP_USE_RAID_STYLE_PARTY_FRAMES
-            _G[self:GetName().."Text"]:SetText(USE_RAID_STYLE_PARTY_FRAMES)
-
-            self.setFunc = function (value)
-              CUF_CVar:SetValue(self.CVar, value)
-              RaidOptionsFrame_UpdatePartyFrames()
-              CompactRaidFrameManager_UpdateShown(CompactRaidFrameManager);
-
-              if ( value and value ~= "0" ) then
-                self:GetParent().optionsFrame.autoActivate2Players:Enable();
-                self:GetParent().optionsFrame.autoActivate3Players:Enable();
-                self:GetParent().optionsFrame.autoActivate5Players:Enable();
-              else
-                self:GetParent().optionsFrame.autoActivate2Players:Disable();
-                self:GetParent().optionsFrame.autoActivate3Players:Disable();
-                self:GetParent().optionsFrame .autoActivate5Players:Disable();
-              end
-            end;
-            BlizzardOptionsPanel_RegisterControl(self, self:GetParent());
-            self:RegisterEvent("VARIABLES_LOADED");
-          </OnLoad>
-          <OnEvent>
-            self.setFunc(CUF_CVar:GetValue(self.CVar));
-            self:SetChecked(CUF_CVar:GetValue(self.CVar));
-          </OnEvent>
-        </Scripts>
-      </CheckButton>
       <Frame name="$parentNewProfileDialog" inherits="CompactUnitFrameProfileDialogWithCoverTemplate" parentKey="newProfileDialog">
         <Size x="450" y="200" />
         <Layers>
@@ -317,7 +278,10 @@
             </Layers>
             <Scripts>
               <OnEnterPressed>
-                self:GetParent().createButton:Click();
+                local createButton = self:GetParent().createButton;
+                if ( CRF_IsButtonEnabled(createButton) ) then
+                  createButton:Click();
+                end
               </OnEnterPressed>
               <OnEscapePressed>
                 self:ClearFocus();
@@ -353,7 +317,7 @@
             <Scripts>
               <OnClick>
                 --Also clicked via the OnEnterPressed script in the EditBox.
-                PlaySoundFile(SOUNDKIT.IG_MAINMENU_OPTION_CHECKBOX_ON);
+                PlaySound("igMainMenuOptionCheckBoxOn");
                 CompactUnitFrameProfiles_CreateProfile(strtrim(self:GetParent().editBox:GetText()));
                 CompactUnitFrameProfiles_HideNewProfileDialog();
               </OnClick>
@@ -366,7 +330,7 @@
             </Anchors>
             <Scripts>
               <OnClick>
-                PlaySoundFile(SOUNDKIT.IG_MAINMENU_OPTION_CHECKBOX_ON);
+                PlaySound("igMainMenuOptionCheckBoxOn");
                 CompactUnitFrameProfiles_HideNewProfileDialog();
               </OnClick>
             </Scripts>
@@ -393,14 +357,8 @@
             </Anchors>
             <Scripts>
               <OnClick>
-                PlaySoundFile(SOUNDKIT.IG_MAINMENU_OPTION_CHECKBOX_ON);
-                local newProfile = GetRaidProfileName(1);
-                if ( newProfile == self:GetParent().profile ) then
-                  newProfile = GetRaidProfileName(2);
-                end
-                CompactUnitFrameProfiles_ActivateRaidProfile(newProfile);
-                DeleteRaidProfile(self:GetParent().profile);
-                CompactUnitFrameProfiles_UpdateManagementButtons();
+                PlaySound("igMainMenuOptionCheckBoxOn");
+                CompactUnitFrameProfiles_DeleteProfile(self:GetParent().profile);
                 self:GetParent():Hide();
               </OnClick>
             </Scripts>
@@ -412,7 +370,7 @@
             </Anchors>
             <Scripts>
               <OnClick>
-                PlaySoundFile(SOUNDKIT.IG_MAINMENU_OPTION_CHECKBOX_ON);
+                PlaySound("igMainMenuOptionCheckBoxOn");
                 self:GetParent():Hide();
               </OnClick>
             </Scripts>
@@ -423,7 +381,7 @@
         <Size x="430" y="120" />
         <Layers>
           <Layer level="ARTWORK">
-            <FontString name="$parentLabel" inherits = "GameFontNormal" justifyH = "CENTER" text="CONFIRM_COMPACT_UNIT_FRAME_PROFILE_UNSAVED_CHANGES" parentKey="label">
+            <FontString name="$parentLabel" inherits="GameFontNormal" justifyH="CENTER" text="CONFIRM_COMPACT_UNIT_FRAME_PROFILE_UNSAVED_CHANGES" parentKey="label">
               <Anchors>
                 <Anchor point="TOPLEFT" x="20" y="-13" />
                 <Anchor point="BOTTOMRIGHT" x="-20" y="40" />
@@ -439,7 +397,7 @@
             </Anchors>
             <Scripts>
               <OnClick>
-                PlaySoundFile(SOUNDKIT.IG_MAINMENU_OPTION_CHECKBOX_ON);
+                PlaySound("igMainMenuOptionCheckBoxOn");
                 CompactUnitFrameProfiles_CancelChanges(CompactUnitFrameProfiles);
                 CompactUnitFrameProfiles_AfterConfirmUnsavedChanges();
                 self:GetParent():Hide();
@@ -453,7 +411,7 @@
             </Anchors>
             <Scripts>
               <OnClick>
-                PlaySoundFile(SOUNDKIT.IG_MAINMENU_OPTION_CHECKBOX_ON);
+                PlaySound("igMainMenuOptionCheckBoxOn");
                 CompactUnitFrameProfiles_SaveChanges(CompactUnitFrameProfiles);
                 CompactUnitFrameProfiles_AfterConfirmUnsavedChanges();
                 self:GetParent():Hide();
@@ -467,317 +425,12 @@
             </Anchors>
             <Scripts>
               <OnClick>
-                PlaySoundFile(SOUNDKIT.IG_MAINMENU_OPTION_CHECKBOX_ON);
+                PlaySound("igMainMenuOptionCheckBoxOn");
                 self:GetParent():Hide();
               </OnClick>
             </Scripts>
           </Button>
         </Frames>
-      </Frame>
-      <Frame name="$parentGeneralOptionsFrame" setAllPoints="true" parentKey="optionsFrame">
-        <Layers>
-          <Layer level="BACKGROUND">
-            <Texture name="$parentAutoActivateBG" parentKey="autoActivateBG">
-              <!--The size is changed programatically -->
-              <Size x="190" y="0" />
-              <!--Also change the with of AutoActivateDisabledLabel -->
-              <Anchors>
-                <Anchor point="TOPLEFT" relativeTo="$parent" relativePoint="TOPLEFT" x="415" y="-50" />
-              </Anchors>
-              <Color r="0.3" g="0.3" b="0.3" a="0.3" />
-            </Texture>
-          </Layer>
-          <Layer level="ARTWORK">
-            <FontString name="$parentAutoActivateLabel" inherits="GameFontNormal" text="AUTO_ACTIVATE_ON" parentKey="autoActivateLabel">
-              <Anchors>
-                <Anchor point="TOPLEFT" relativeTo="$parentAutoActivateBG" relativePoint="TOPLEFT" x="5" y="-5" />
-              </Anchors>
-            </FontString>
-            <FontString name="$parentAutoActivateDisabledLabel" inherits="GameFontNormalLeftRed" parentKey="autoActivateDisabledLabel" hidden="true">
-              <Size x="190" y="0" />
-              <Anchors>
-                <Anchor point="TOPLEFT" relativeTo="$parentAutoActivateBG" relativePoint="BOTTOMLEFT" x="0" y="-10" />
-              </Anchors>
-            </FontString>
-          </Layer>
-        </Layers>
-        <Frames>
-          <CheckButton name="$parentKeepGroupsTogether" inherits="CompactUnitFrameProfilesCheckButtonTemplate">
-            <Anchors>
-              <Anchor point="TOPLEFT" x="13" y="-110" />
-            </Anchors>
-            <Scripts>
-              <OnLoad>
-                CompactUnitFrameProfilesCheckButton_InitializeWidget(self, "keepGroupsTogether", function(self)
-                  local currentValue = GetRaidProfileOption(CompactUnitFrameProfiles.selectedProfile, self.optionName);
-                  local sortBy = _G[self:GetParent():GetName().."SortByDropdown"];
-                  local horizontalGroups = _G[self:GetParent():GetName().."HorizontalGroups"];
-                  if ( currentValue ) then
-                    sortBy:Hide();
-                    horizontalGroups:Show();
-                  else
-                    sortBy:Show();
-                    horizontalGroups:Hide();
-                  end
-                  self:SetChecked(currentValue);
-                end)
-              </OnLoad>
-            </Scripts>
-          </CheckButton>
-          <CheckButton name="$parentHorizontalGroups" inherits="CompactUnitFrameProfilesCheckButtonTemplate">
-            <Anchors>
-              <Anchor point="TOPLEFT" relativeTo="$parentKeepGroupsTogether" relativePoint="BOTTOMLEFT" x="15" y="-5" />
-            </Anchors>
-            <Scripts>
-              <OnLoad>
-                CompactUnitFrameProfilesCheckButton_InitializeWidget(self, "horizontalGroups");
-              </OnLoad>
-            </Scripts>
-          </CheckButton>
-          <Frame name="$parentSortByDropdown" inherits="CompactUnitFrameProfilesDropdownTemplate">
-            <Anchors>
-              <Anchor point="TOPLEFT" relativeTo="$parentKeepGroupsTogether" relativePoint="BOTTOMLEFT" x="15" y="-10" />
-            </Anchors>
-            <Scripts>
-              <OnLoad>
-                self.width = 110;
-                CompactUnitFrameProfilesDropdown_InitializeWidget(self, "sortBy", { "role", "group", "alphabetical" });
-              </OnLoad>
-            </Scripts>
-          </Frame>
-          <CheckButton name="$parentDisplayPowerBar" inherits="CompactUnitFrameProfilesCheckButtonTemplate">
-            <Anchors>
-              <Anchor point="TOPLEFT" relativeTo="$parentKeepGroupsTogether" relativePoint="BOTTOMLEFT" x="0" y="-50" />
-            </Anchors>
-            <Scripts>
-              <OnLoad>
-                CompactUnitFrameProfilesCheckButton_InitializeWidget(self, "displayPowerBar");
-              </OnLoad>
-            </Scripts>
-          </CheckButton>
-          <CheckButton name="$parentDisplayAggroHighlight" inherits="CompactUnitFrameProfilesCheckButtonTemplate">
-            <Anchors>
-              <Anchor point="TOPLEFT" relativeTo="$parentDisplayPowerBar" relativePoint="BOTTOMLEFT" x="0" y="-5" />
-            </Anchors>
-            <Scripts>
-              <OnLoad>
-                CompactUnitFrameProfilesCheckButton_InitializeWidget(self, "displayAggroHighlight");
-              </OnLoad>
-            </Scripts>
-          </CheckButton>
-          <CheckButton name="$parentUseClassColors" inherits="CompactUnitFrameProfilesCheckButtonTemplate">
-            <Anchors>
-              <Anchor point="TOPLEFT" relativeTo="$parentDisplayAggroHighlight" relativePoint="BOTTOMLEFT" x="0" y="-5" />
-            </Anchors>
-            <Scripts>
-              <OnLoad>
-                CompactUnitFrameProfilesCheckButton_InitializeWidget(self, "useClassColors");
-              </OnLoad>
-            </Scripts>
-          </CheckButton>
-          <CheckButton name="$parentDisplayPets" inherits="CompactUnitFrameProfilesCheckButtonTemplate">
-            <Anchors>
-              <Anchor point="TOPLEFT" relativeTo="$parentUseClassColors" relativePoint="BOTTOMLEFT" x="0" y="-5" />
-            </Anchors>
-            <Scripts>
-              <OnLoad>
-                CompactUnitFrameProfilesCheckButton_InitializeWidget(self, "displayPets");
-              </OnLoad>
-            </Scripts>
-          </CheckButton>
-          <CheckButton name="$parentDisplayMainTankAndAssist" inherits="CompactUnitFrameProfilesCheckButtonTemplate">
-            <Anchors>
-              <Anchor point="TOPLEFT" relativeTo="$parentDisplayPets" relativePoint="BOTTOMLEFT" x="0" y="-5" />
-            </Anchors>
-            <Scripts>
-              <OnLoad>
-                CompactUnitFrameProfilesCheckButton_InitializeWidget(self, "displayMainTankAndAssist");
-              </OnLoad>
-            </Scripts>
-          </CheckButton>
-          <CheckButton name="$parentDisplayBorder" inherits="CompactUnitFrameProfilesCheckButtonTemplate">
-            <Anchors>
-              <Anchor point="TOPLEFT" relativeTo="$parentDisplayMainTankAndAssist" relativePoint="BOTTOMLEFT" x="0" y="-5" />
-            </Anchors>
-            <Scripts>
-              <OnLoad>
-                CompactUnitFrameProfilesCheckButton_InitializeWidget(self, "displayBorder");
-              </OnLoad>
-            </Scripts>
-          </CheckButton>
-          <CheckButton name="$parentShowDebuffs" inherits="CompactUnitFrameProfilesCheckButtonTemplate">
-            <Anchors>
-              <Anchor point="TOPLEFT" relativeTo="$parentDisplayBorder" relativePoint="BOTTOMLEFT" x="0" y="-5" />
-            </Anchors>
-            <Scripts>
-              <OnLoad>
-                CompactUnitFrameProfilesCheckButton_InitializeWidget(self, "displayNonBossDebuffs", function(self)
-                  local currentValue = GetRaidProfileOption(CompactUnitFrameProfiles.selectedProfile, self.optionName);
-                  local onlyDispellable = _G[self:GetParent():GetName().."DisplayOnlyDispellableDebuffs"];
-                  if ( currentValue ) then
-                    onlyDispellable:Show();
-                  else
-                    onlyDispellable:Hide();
-                  end
-                  self:SetChecked(currentValue);
-                end)
-              </OnLoad>
-            </Scripts>
-          </CheckButton>
-          <CheckButton name="$parentDisplayOnlyDispellableDebuffs" inherits="CompactUnitFrameProfilesCheckButtonTemplate">
-            <Anchors>
-              <Anchor point="TOPLEFT" relativeTo="$parentShowDebuffs" relativePoint="BOTTOMLEFT" x="15" y="-2" />
-            </Anchors>
-            <Scripts>
-              <OnLoad>
-                CompactUnitFrameProfilesCheckButton_InitializeWidget(self, "displayOnlyDispellableDebuffs");
-              </OnLoad>
-            </Scripts>
-          </CheckButton>
-          <Frame name="$parentHealthTextDropdown" inherits="CompactUnitFrameProfilesDropdownTemplate">
-            <Anchors>
-              <Anchor point="TOPLEFT" relativeTo="$parentDisplayOnlyDispellableDebuffs" relativePoint="BOTTOMLEFT" x="-18" y="-18" />
-            </Anchors>
-            <Scripts>
-              <OnLoad>
-                CompactUnitFrameProfilesDropdown_InitializeWidget(self, "healthText", { "none", "health", "losthealth", "perc" });
-              </OnLoad>
-            </Scripts>
-          </Frame>
-          <Slider name="$parentHeightSlider" inherits="CompactUnitFrameProfilesSliderTemplate" minValue="36" maxValue="96" valueStep="2">
-            <Anchors>
-              <Anchor point="TOPLEFT" relativeTo="$parentHealthTextDropdown" relativePoint="BOTTOMLEFT" x="10" y="-15" />
-            </Anchors>
-            <Scripts>
-              <OnLoad inherit="prepend">
-                CompactUnitFrameProfilesSlider_SetTrack(self);
-                CompactUnitFrameProfilesSlider_InitializeWidget(self, "frameHeight", SHORT, TALL);
-              </OnLoad>
-            </Scripts>
-          </Slider>
-          <Slider name="$parentWidthSlider" inherits="CompactUnitFrameProfilesSliderTemplate" minValue="72" maxValue="186" valueStep="2">
-            <Anchors>
-              <Anchor point="LEFT" relativeTo="$parentHeightSlider" relativePoint="RIGHT" x="40" y="0" />
-            </Anchors>
-            <Scripts>
-              <OnLoad inherit="prepend">
-                CompactUnitFrameProfilesSlider_SetTrack(self);
-                CompactUnitFrameProfilesSlider_InitializeWidget(self, "frameWidth", NARROW, WIDE);
-              </OnLoad>
-            </Scripts>
-          </Slider>
-
-          <CheckButton name="$parentAutoActivate2Players" inherits="CompactUnitFrameProfilesCheckButtonTemplate" parentKey="autoActivate2Players">
-            <Anchors>
-              <Anchor point="TOPLEFT" relativeTo="$parentAutoActivateLabel" relativePoint="BOTTOMLEFT" x="0" y="-5" />
-            </Anchors>
-            <Scripts>
-              <OnLoad>
-                CompactUnitFrameProfilesCheckButton_InitializeWidget(self, "autoActivate2Players");
-                self.disabledTooltip = AUTO_ACTIVATE_DISABLED_IN_PARTY;
-              </OnLoad>
-            </Scripts>
-          </CheckButton>
-          <CheckButton name="$parentAutoActivate3Players" inherits="CompactUnitFrameProfilesCheckButtonTemplate" parentKey="autoActivate3Players">
-            <Anchors>
-              <Anchor point="TOPLEFT" relativeTo="$parentAutoActivate2Players" relativePoint="BOTTOMLEFT" x="0" y="0" />
-            </Anchors>
-            <Scripts>
-              <OnLoad>
-                CompactUnitFrameProfilesCheckButton_InitializeWidget(self, "autoActivate3Players");
-                self.disabledTooltip = AUTO_ACTIVATE_DISABLED_IN_PARTY;
-              </OnLoad>
-            </Scripts>
-          </CheckButton>
-          <CheckButton name="$parentAutoActivate5Players" inherits="CompactUnitFrameProfilesCheckButtonTemplate" parentKey="autoActivate5Players">
-            <Anchors>
-              <Anchor point="TOPLEFT" relativeTo="$parentAutoActivate3Players" relativePoint="BOTTOMLEFT" x="0" y="0" />
-            </Anchors>
-            <Scripts>
-              <OnLoad>
-                CompactUnitFrameProfilesCheckButton_InitializeWidget(self, "autoActivate5Players");
-                self.disabledTooltip = AUTO_ACTIVATE_DISABLED_IN_PARTY;
-              </OnLoad>
-            </Scripts>
-          </CheckButton>
-          <CheckButton name="$parentAutoActivate10Players" inherits="CompactUnitFrameProfilesCheckButtonTemplate">
-            <Anchors>
-              <Anchor point="TOPLEFT" relativeTo="$parentAutoActivate5Players" relativePoint="BOTTOMLEFT" x="0" y="0" />
-            </Anchors>
-            <Scripts>
-              <OnLoad>
-                CompactUnitFrameProfilesCheckButton_InitializeWidget(self, "autoActivate10Players");
-              </OnLoad>
-            </Scripts>
-          </CheckButton>
-          <CheckButton name="$parentAutoActivate15Players" inherits="CompactUnitFrameProfilesCheckButtonTemplate">
-            <Anchors>
-              <Anchor point="TOPLEFT" relativeTo="$parentAutoActivate10Players" relativePoint="BOTTOMLEFT" x="0" y="0" />
-            </Anchors>
-            <Scripts>
-              <OnLoad>
-                CompactUnitFrameProfilesCheckButton_InitializeWidget(self, "autoActivate15Players");
-              </OnLoad>
-            </Scripts>
-          </CheckButton>
-          <CheckButton name="$parentAutoActivate25Players" inherits="CompactUnitFrameProfilesCheckButtonTemplate">
-            <Anchors>
-              <Anchor point="TOPLEFT" relativeTo="$parentAutoActivate15Players" relativePoint="BOTTOMLEFT" x="0" y="0" />
-            </Anchors>
-            <Scripts>
-              <OnLoad>
-                CompactUnitFrameProfilesCheckButton_InitializeWidget(self, "autoActivate25Players");
-              </OnLoad>
-            </Scripts>
-          </CheckButton>
-          <CheckButton name="$parentAutoActivate40Players" inherits="CompactUnitFrameProfilesCheckButtonTemplate">
-            <Anchors>
-              <Anchor point="TOPLEFT" relativeTo="$parentAutoActivate25Players" relativePoint="BOTTOMLEFT" x="0" y="0" />
-            </Anchors>
-            <Scripts>
-              <OnLoad>
-                CompactUnitFrameProfilesCheckButton_InitializeWidget(self, "autoActivate40Players");
-              </OnLoad>
-            </Scripts>
-          </CheckButton>
-
-          <CheckButton name="$parentAutoActivatePvP" inherits="CompactUnitFrameProfilesCheckButtonTemplate" parentKey="AutoActivatePvP">
-            <Anchors>
-              <Anchor point="TOPLEFT" relativeTo="$parentAutoActivate40Players" relativePoint="BOTTOMLEFT" x="0" y="-15" />
-            </Anchors>
-            <Scripts>
-              <OnLoad>
-                CompactUnitFrameProfilesCheckButton_InitializeWidget(self, "autoActivatePvP");
-              </OnLoad>
-            </Scripts>
-          </CheckButton>
-          <CheckButton name="$parentAutoActivatePvE" parentKey="AutoActivatePvE" inherits="CompactUnitFrameProfilesCheckButtonTemplate">
-            <Anchors>
-              <Anchor point="TOPLEFT" relativeTo="$parentAutoActivatePvP" relativePoint="BOTTOMLEFT" x="0" y="0" />
-            </Anchors>
-            <Scripts>
-              <OnLoad>
-                CompactUnitFrameProfilesCheckButton_InitializeWidget(self, "autoActivatePvE");
-              </OnLoad>
-            </Scripts>
-          </CheckButton>
-
-          <Button name="$parentResetPositionButton" inherits="UIPanelButtonTemplate2" text="RESET_POSITION">
-            <Size x="160" y="21" />
-            <Anchors>
-              <Anchor point="BOTTOMRIGHT" x="-5" y="5" />
-            </Anchors>
-            <Scripts>
-              <OnClick>
-                PlaySoundFile(SOUNDKIT.IG_MAINMENU_OPTION_CHECKBOX_ON);
-                CompactRaidFrameManager_ResetContainerPosition();
-              </OnClick>
-            </Scripts>
-          </Button>
-        </Frames>
-        <Scripts>
-          <OnShow function="CompactUnitFrameProfilesGeneralOptionsFrame_OnShow" />
-        </Scripts>
       </Frame>
     </Frames>
     <Scripts>

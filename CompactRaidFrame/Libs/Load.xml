@@ -3,7 +3,7 @@
 ..\FrameXML\UI.xsd">
 
   <Script file="LibStub\LibStub.lua" />
-  <Include file="CallbackHandler-1.0\Callbackhandler-1.0.xml" />
+  <Include file="CallbackHandler-1.0\CallbackHandler-1.0.xml" />
 
   <Include file="LibResComm-1.0\LibResComm-1.0.xml" />
   <Include file="LibTalentQuery-1.0\LibTalentQuery-1.0.xml" />

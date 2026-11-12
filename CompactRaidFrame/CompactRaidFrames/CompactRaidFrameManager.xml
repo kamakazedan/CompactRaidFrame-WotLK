@@ -3,7 +3,7 @@
 ..\..\FrameXML\UI.xsd">
   <Script file="CompactRaidFrameManager.lua" />
 
-  <Button name="CRFManagerFilterButtonTemplate" inherits="UIMenuButtonStretchTemplate" virtual="true">
+  <Button name="CRFManagerFilterButtonTemplate" inherits="CRF_UIMenuButtonStretchTemplate" virtual="true">
     <Layers>
       <Layer level="OVERLAY">
         <Texture name="$parentSelectedHighlight" file="Interface\AddOns\CompactRaidFrame\Texture\Buttons\UI-Panel-Button-YellowHighlight" alphaMode="ADD" parentKey="selectedHighlight" alpha="0.7">
@@ -16,8 +16,8 @@
     <Size x="58" y="24" />
     <Scripts>
       <OnClick>
-        PlaySoundFile(SOUNDKIT.IG_MAINMENU_OPTION_CHECKBOX_ON);
-        if UnitAffectingCombat("player") then return DEFAULT_CHAT_FRAME:AddMessage(COMPACT_UNIT_FRAME_ERRCOMBAT); end
+        PlaySound("igMainMenuOptionCheckBoxOn");
+        if InCombatLockdown() then return DEFAULT_CHAT_FRAME:AddMessage(COMPACT_UNIT_FRAME_ERRCOMBAT); end
         CompactRaidFrameManager_ToggleRoleFilter(self.role);
       </OnClick>
     </Scripts>
@@ -26,8 +26,8 @@
     <Size x="41" y="24" />
     <Scripts>
       <OnClick>
-        PlaySoundFile(SOUNDKIT.IG_MAINMENU_OPTION_CHECKBOX_ON);
-        if UnitAffectingCombat("player") then return DEFAULT_CHAT_FRAME:AddMessage(COMPACT_UNIT_FRAME_ERRCOMBAT); end
+        PlaySound("igMainMenuOptionCheckBoxOn");
+        if InCombatLockdown() then return DEFAULT_CHAT_FRAME:AddMessage(COMPACT_UNIT_FRAME_ERRCOMBAT); end
         CompactRaidFrameManager_ToggleGroupFilter(self:GetID());
       </OnClick>
     </Scripts>
@@ -49,11 +49,11 @@
         tex:SetPoint("CENTER", self, "CENTER", 0, 0);
       </OnLoad>
       <OnClick>
-        PlaySoundFile(SOUNDKIT.IG_MAINMENU_OPTION_CHECKBOX_ON);
+        PlaySound("igMainMenuOptionCheckBoxOn");
         SetRaidTarget("target", self:GetID());
       </OnClick>
       <OnMouseDown>
-        if ( self:IsEnabled() ) then
+        if ( CRF_IsButtonEnabled(self) ) then
           self:GetNormalTexture():SetPoint("CENTER", self, "CENTER", -1, -1);
         end
       </OnMouseDown>
@@ -69,7 +69,7 @@
       <Anchor point="TOPLEFT" relativeTo="UIParent" relativePoint="TOPLEFT" x="7" y="-140" />
     </Anchors>
     <Layers>
-      <Layer level="ATWORK">
+      <Layer level="ARTWORK">
         <Texture name="$parentBorderTopLeft" file="Interface\AddOns\CompactRaidFrame\Texture\RaidFrame\RaidPanel-UpperLeft">
           <Size x="32" y="32" />
           <Anchors>
@@ -192,11 +192,11 @@
                 self:RegisterForDrag("LeftButton");
               </OnLoad>
               <OnMouseDown>
-                if UnitAffectingCombat("player") then return; end
+                if InCombatLockdown() then return; end
                 CompactRaidFrameManager_ResizeFrame_OnDragStart(self:GetParent():GetParent());
               </OnMouseDown>
               <OnMouseUp>
-                if UnitAffectingCombat("player") then return; end
+                if InCombatLockdown() then return; end
                 CompactRaidFrameManager_ResizeFrame_OnDragStop(self:GetParent():GetParent());
               </OnMouseUp>
               <OnEnter>
@@ -220,12 +220,12 @@
             <Scripts>
               <OnMouseDown>
                 --SetCursor("UI-Cursor-Size");  --Hide the cursor
-                if UnitAffectingCombat("player") then return; end
+                if InCombatLockdown() then return; end
                 CompactRaidFrameManager_ResizeFrame_OnResizeStart(self:GetParent():GetParent());
               </OnMouseDown>
               <OnMouseUp>
                 --SetCursor(nil); --Show the cursor again
-                if UnitAffectingCombat("player") then return; end
+                if InCombatLockdown() then return; end
                 CompactRaidFrameManager_ResizeFrame_OnResizeStop(self:GetParent():GetParent());
               </OnMouseUp>
               <OnEnter>
@@ -331,9 +331,7 @@
                   InterfaceOptionsFrame_OpenToCategory(CompactUnitFrameProfiles);
                   InterfaceOptionsFrame_OpenToCategory(CompactUnitFrameProfiles); -- twice: 3.3.5a scroll quirk
                 end
-                if ( SOUNDKIT and SOUNDKIT.IG_MAINMENU_OPTION ) then
-                  PlaySoundFile(SOUNDKIT.IG_MAINMENU_OPTION);
-                end
+                PlaySound("igMainMenuOption");
               </OnClick>
               <OnEnter>
                 GameTooltip:SetOwner(self, "ANCHOR_RIGHT");
@@ -451,35 +449,34 @@
               </Button>
             </Frames>
           </Frame>
-          <Button name="$parentLockedModeToggle" parentKey="lockedModeToggle" inherits="UIMenuButtonStretchTemplate" text = "UNLOCK">
+          <Button name="$parentLockedModeToggle" parentKey="lockedModeToggle" inherits="CRF_UIMenuButtonStretchTemplate" text = "UNLOCK">
             <Size x="85" y="20" />
             <Scripts>
               <OnClick>
-                if UnitAffectingCombat("player") then return DEFAULT_CHAT_FRAME:AddMessage(COMPACT_UNIT_FRAME_ERRCOMBAT); end
-                PlaySoundFile(SOUNDKIT.IG_MAINMENU_OPTION_CHECKBOX_ON);
+                if InCombatLockdown() then return DEFAULT_CHAT_FRAME:AddMessage(COMPACT_UNIT_FRAME_ERRCOMBAT); end
+                PlaySound("igMainMenuOptionCheckBoxOn");
                 SetRaidProfileOption(GetActiveRaidProfile(), "locked", self.lockMode);
                 CompactRaidFrameManager_SetSetting("Locked", self.lockMode);
               </OnClick>
             </Scripts>
           </Button>
-          <Button name="$parentHiddenModeToggle" parentKey="hiddenModeToggle" inherits="UIMenuButtonStretchTemplate" text = "SHOW">
+          <Button name="$parentHiddenModeToggle" parentKey="hiddenModeToggle" inherits="CRF_UIMenuButtonStretchTemplate" text = "SHOW">
             <Size x="85" y="20" />
             <Scripts>
               <OnClick>
-                if UnitAffectingCombat("player") then return DEFAULT_CHAT_FRAME:AddMessage(COMPACT_UNIT_FRAME_ERRCOMBAT); end
-                PlaySoundFile(SOUNDKIT.IG_MAINMENU_OPTION_CHECKBOX_ON);
+                if InCombatLockdown() then return DEFAULT_CHAT_FRAME:AddMessage(COMPACT_UNIT_FRAME_ERRCOMBAT); end
+                PlaySound("igMainMenuOptionCheckBoxOn");
                 SetRaidProfileOption(GetActiveRaidProfile(), "shown", self.shownMode);
                 CompactRaidFrameManager_SetSetting("IsShown", self.shownMode);
               </OnClick>
             </Scripts>
           </Button>
-          <Button name="$parentConvertToRaid" parentKey="convertToRaid" inherits="UIMenuButtonStretchTemplate" text="CONVERT_TO_RAID" hidden="true">
+          <Button name="$parentConvertToRaid" parentKey="convertToRaid" inherits="CRF_UIMenuButtonStretchTemplate" text="CONVERT_TO_RAID" hidden="true">
             <Size x="169" y="20" />
             <Scripts>
               <OnClick>
-                if UnitAffectingCombat("player") then return DEFAULT_CHAT_FRAME:AddMessage(COMPACT_UNIT_FRAME_ERRCOMBAT); end
-                if UnitAffectingCombat("player") then return; end
-                PlaySoundFile(SOUNDKIT.IG_MAINMENU_OPTION_CHECKBOX_ON);
+                if InCombatLockdown() then return DEFAULT_CHAT_FRAME:AddMessage(COMPACT_UNIT_FRAME_ERRCOMBAT); end
+                PlaySound("igMainMenuOptionCheckBoxOn");
                 ConvertToRaid();
               </OnClick>
             </Scripts>
@@ -546,7 +543,7 @@
           <Frame name="$parentLeaderOptions" parentKey="leaderOptions" hidden="true">
             <Size x="200" y="45" />
             <Frames>
-              <Button name="$parentInitiateRolePoll" inherits="UIMenuButtonStretchTemplate" text="ROLE_POLL" parentKey="rolePollButton">
+              <Button name="$parentInitiateRolePoll" inherits="CRF_UIMenuButtonStretchTemplate" text="ROLE_POLL" parentKey="rolePollButton">
                 <Size x="169" y="20" />
                 <Anchors>
                   <Anchor point="TOPLEFT" relativeTo="$parent" relativePoint="TOPLEFT" x="20" y="-5" />
@@ -558,14 +555,14 @@
                   </OnLoad>
                 </Scripts>
               </Button>
-              <Button name="$parentInitiateReadyCheck" inherits="UIMenuButtonStretchTemplate" text="READY_CHECK" parentKey="readyCheckButton">
+              <Button name="$parentInitiateReadyCheck" inherits="CRF_UIMenuButtonStretchTemplate" text="READY_CHECK" parentKey="readyCheckButton">
                 <Size x="169" y="20" />
                 <Anchors>
                   <Anchor point="TOPLEFT" relativeTo="$parentInitiateRolePoll" relativePoint="BOTTOMLEFT" x="0" y="0" />
                 </Anchors>
                 <Scripts>
                   <OnClick>
-                    PlaySoundFile(SOUNDKIT.IG_MAINMENU_OPTION_CHECKBOX_ON);
+                    PlaySound("igMainMenuOptionCheckBoxOn");
                     if ( UnitIsGroupLeader("player") or UnitIsGroupAssistant("player") ) then
                       DoReadyCheck();
                     end
@@ -593,6 +590,9 @@
                 _G[self:GetName().."Text"]:SetText(ALL_ASSIST_LABEL_LONG);
                 self:RegisterEvent("PARTY_LEADER_CHANGED");
               </OnLoad>
+              <OnShow>
+                self:GetScript("OnEvent")(self);
+              </OnShow>
               <OnEvent>
                 self:SetChecked(IsEveryoneAssistant());
                 if ( UnitIsGroupLeader("player") ) then
@@ -604,13 +604,13 @@
                 end
               </OnEvent>
               <OnClick>
-                PlaySoundFile(SOUNDKIT.IG_MAINMENU_OPTION_CHECKBOX_ON);
-                SetEveryoneIsAssistant(self:GetChecked());
+                PlaySound(self:GetChecked() and "igMainMenuOptionCheckBoxOn" or "igMainMenuOptionCheckBoxOff");
+                SetEveryoneIsAssistant(self:GetChecked() and true or false);
               </OnClick>
               <OnEnter>
                 GameTooltip:SetOwner(self, "ANCHOR_RIGHT");
                 GameTooltip:SetText(ALL_ASSIST_DESCRIPTION, nil, nil, nil, nil, true);
-                if ( not self:IsEnabled() ) then
+                if ( not CRF_IsButtonEnabled(self) ) then
                   GameTooltip:AddLine(ALL_ASSIST_NOT_LEADER_ERROR, RED_FONT_COLOR.r, RED_FONT_COLOR.g, RED_FONT_COLOR.b, true);
                 end
                 GameTooltip:Show();

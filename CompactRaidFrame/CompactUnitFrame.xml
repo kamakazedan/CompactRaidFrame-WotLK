@@ -218,45 +218,4 @@
       <OnLeave function="UnitFrame_OnLeave" />
     </Scripts>
   </Button>
-  <StatusBar name="CompactUnitFrameCastBarTemplate" parentKey="castBar" hidden="true" virtual="true">
-    <Layers>
-      <Layer level="BACKGROUND">
-        <Texture parentKey="Background" setAllPoints="true" />
-      </Layer>
-      <Layer level="OVERLAY">
-        <FontString parentKey="Text" inherits="SystemFont_Shadow_Small">
-          <Size x="0" y="16" />
-          <Anchors>
-            <Anchor point="CENTER" x="0" y="0" />
-          </Anchors>
-        </FontString>
-        <Texture parentKey="BorderShield" file="Interface\TargetingFrame\NameplateFill" hidden="true">
-          <TexCoords left="0.929688" right="0.984375" top="0.234375" bottom="0.359375" />
-          <Size x="10" y="12" />
-          <Anchors>
-            <Anchor point="CENTER" relativeTo="LEFT" x="-2" y="-1" />
-          </Anchors>
-        </Texture>
-      </Layer>
-      <Layer level="OVERLAY">
-        <Texture parentKey="Spark" file="Interface\CastingBar\UI-CastingBar-Spark" alphaMode="ADD">
-          <Size x="16" y="16" />
-          <Anchors>
-            <Anchor point="CENTER" x="0" y="0" />
-          </Anchors>
-        </Texture>
-        <Texture parentKey="Flash" file="Interface\TargetingFrame\UI-TargetingFrame-BarFill" alphaMode="ADD" />
-      </Layer>
-    </Layers>
-    <Scripts>
-      <OnLoad>
-        CastingBarFrame_OnLoad(self, nil, false, true);
-      </OnLoad>
-      <OnEvent function="CastingBarFrame_OnEvent" />
-      <OnUpdate function="CastingBarFrame_OnUpdate" />
-      <OnShow function="CastingBarFrame_OnShow" />
-    </Scripts>
-    <BarTexture file="Interface\TargetingFrame\UI-StatusBar" />
-    <BarColor r="1.0" g="0.7" b="0.0" />
-  </StatusBar>
 </Ui>

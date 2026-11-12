@@ -206,8 +206,14 @@ function DeleteRaidProfile(profile)
 	end
 end
 
+-- Snapshot `profile` so Cancel / "Don't Save" can restore it later. This must
+-- ALWAYS take a fresh copy: it is called when switching to another profile, and
+-- skipping it there (as an older build did whenever the previous profile had no
+-- unsaved changes) left the snapshot pointing at the OLD profile, so edits to
+-- the newly selected one were never detected (Save stayed greyed out, Cancel
+-- didn't revert them, and no "unsaved changes" prompt appeared).
 function SaveRaidProfileCopy(profile)
-	if ( not profile or (PROFILE_COPY and not RaidProfileHasUnsavedChanges()) ) then
+	if ( not PROFILES or not profile ) then
 		return;
 	end
 
@@ -315,7 +321,10 @@ function CUF_CVar:SetValue(cvar, value)
 		return;
 	end
 
-	CUF_CONFIG[cvar] = value ~= "0" and value or nil;
+	-- Store "0" as "0". Turning it into nil (as an older build did) made
+	-- "Use Raid-Style Party Frames" switch itself back on after every reload,
+	-- because the loader treats a missing value as "never set" -> default "1".
+	CUF_CONFIG[cvar] = value;
 end
 
 function CUF_CVar:GetValue(cvar, addon)
@@ -328,4 +337,25 @@ end
 
 function CUF_CVar:GetCVarBool(cvar)
 	return self:GetValue(cvar) == "1" and true or false;
+end
+
+-- "Always show (even when solo)". Account-wide, saved in CompactRaidFrameAccountDB
+-- (it used to live in a plain global that was never saved, so it reset to "on"
+-- at every login). nil = never set = on, the historical default.
+function CRF_IsAlwaysEnabled()
+	local value = CUF_CONFIG and CUF_CONFIG.alwaysShowSolo;
+	if ( value == nil ) then
+		return true;
+	end
+	return value and true or false;
+end
+
+function CRF_SetAlwaysEnabled(enabled)
+	if ( CUF_CONFIG ) then
+		CUF_CONFIG.alwaysShowSolo = enabled and true or false;
+	end
+	-- Manager / container / party-frame visibility (deferred until combat ends).
+	if ( CompactRaidFrameManager and CompactRaidFrameManager_UpdateAll ) then
+		CompactRaidFrameManager_UpdateAll(CompactRaidFrameManager);
+	end
 end

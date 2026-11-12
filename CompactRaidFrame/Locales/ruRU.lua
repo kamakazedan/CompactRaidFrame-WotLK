@@ -1,52 +1,62 @@
 if ( GetLocale() ~= "ruRU" ) then return end
 
-AUTO_ACTIVATE_DISABLED_IN_PARTY = "Для автоматического включения необходимо использовать рейдовый интерфейс для группы."
-USE_RAID_STYLE_PARTY_FRAMES = "Рейдовый интерфейс для группы"
-CREATE_NEW_COMPACT_UNIT_FRAME_PROFILE = "Новый профиль"
-AUTO_ACTIVATE_ON = "Автоматически задействовать"
-AUTO_ACTIVATE_PROFILE_NO_ENEMYTYPE = "Профиль не будет активироваться автоматически, пока вы не выберете PvP или PvE."
-AUTO_ACTIVATE_PROFILE_NO_SIZE = "Профиль не будет активироваться автоматически, пока вы не выберете размер группы."
-RESET_POSITION = "Сброс позиции"
-DONT_SAVE = "Не сохранять"
-NEW_COMPACT_UNIT_FRAME_PROFILE = "Новый профиль"
-USE_EXISTING_PROFILE = "Импортировать из:"
-GROUP_NUMBER = "%d-я группа"
-TALL = "Выше"
-NARROW = "Уже"
-WIDE = "Шире"
-UNLOCK = "Открепить"
-SHOW = "Показать"
-ALL_ASSIST_LABEL_LONG = "Назначить всех помощниками"
-ALL_ASSIST_DESCRIPTION = "Все участники рейда получают права помощника лидера рейда."
-ALL_ASSIST_NOT_LEADER_ERROR = "Эту настройку может менять только лидер рейда."
-RAID_MEMBERS = "Участники рейда"
-PARTY_MEMBERS = "Участники группы"
-ROLE_POLL = "Проверка ролей"
-CONFIRM_COMPACT_UNIT_FRAME_PROFILE_UNSAVED_CHANGES = "Профиль |cffffffff%s|r содержит несохраненные изменения, которые будут потеряны при выполнении этого действия. Хотите сохранить изменения?"
-CONFIRM_COMPACT_UNIT_FRAME_PROFILE_DELETION = "Вы уверены, что хотите удалить профиль |cffffffff%s|r?"
-OPTION_TOOLTIP_USE_RAID_STYLE_PARTY_FRAMES = "Использовать стиль и настройки интерфейса рейда для интерфейса группы."
-COMPACT_UNIT_FRAME_PROFILES_LABEL = "Профили рейда"
-COMPACT_UNIT_FRAME_PROFILE_AUTOACTIVATE2PLAYERS = "в группе из 2 игроков"
-COMPACT_UNIT_FRAME_PROFILE_AUTOACTIVATE3PLAYERS = "в группе из 3 игроков"
-COMPACT_UNIT_FRAME_PROFILE_AUTOACTIVATE5PLAYERS = "в группе из 5 игроков"
-COMPACT_UNIT_FRAME_PROFILE_AUTOACTIVATE10PLAYERS = "в группе из 10 игроков"
-COMPACT_UNIT_FRAME_PROFILE_AUTOACTIVATE15PLAYERS = "в группе из 15 игроков"
-COMPACT_UNIT_FRAME_PROFILE_AUTOACTIVATE25PLAYERS = "в группе из 25 игроков"
-COMPACT_UNIT_FRAME_PROFILE_AUTOACTIVATE40PLAYERS = "в группе из 40 игроков"
-COMPACT_UNIT_FRAME_PROFILE_DISPLAYAGGROHIGHLIGHT = "Индикатор угрозы"
-COMPACT_UNIT_FRAME_PROFILE_DISPLAYBORDER = "Показывать границы"
-COMPACT_UNIT_FRAME_PROFILE_DISPLAYMAINTANKANDASSIST = "Показывать главного танка и наводчика"
-COMPACT_UNIT_FRAME_PROFILE_DISPLAYONLYDISPELLABLEDEBUFFS = "Только рассеиваемые отрицательные эффекты"
-COMPACT_UNIT_FRAME_PROFILE_DISPLAYPETS = "Показывать питомцев"
-COMPACT_UNIT_FRAME_PROFILE_DISPLAYPOWERBAR = "Индикаторы ресурсов"
-COMPACT_UNIT_FRAME_PROFILE_FRAMEHEIGHT = "Высота рамки рейда"
-COMPACT_UNIT_FRAME_PROFILE_FRAMEWIDTH = "Ширина рамки рейда"
-COMPACT_UNIT_FRAME_PROFILE_HEALTHTEXT = "Отображение здоровья"
-COMPACT_UNIT_FRAME_PROFILE_HEALTHTEXT_HEALTH = "Оставшееся здоровье"
-COMPACT_UNIT_FRAME_PROFILE_HEALTHTEXT_LOSTHEALTH = "Потерянное здоровье"
-COMPACT_UNIT_FRAME_PROFILE_HEALTHTEXT_PERC = "Здоровье в процентах"
-COMPACT_UNIT_FRAME_PROFILE_HORIZONTALGROUPS = "Горизонтально"
-COMPACT_UNIT_FRAME_PROFILE_KEEPGROUPSTOGETHER = "Группы вместе"
-COMPACT_UNIT_FRAME_PROFILE_SORTBY = "Сортировка:"
-COMPACT_UNIT_FRAME_PROFILE_SORTBY_ALPHABETICAL = "по алфавиту"
-COMPACT_UNIT_FRAME_PROFILE_USECLASSCOLORS = "Цвета классов"
+-- Only overrides strings the client doesn't define itself (see enUS.lua).
+local L = CRF_SetLocaleString
+
+L("AUTO_ACTIVATE_DISABLED_IN_PARTY", "Для автоматического включения необходимо использовать рейдовый интерфейс для группы.")
+L("USE_RAID_STYLE_PARTY_FRAMES", "Рейдовый интерфейс для группы")
+L("CREATE_NEW_COMPACT_UNIT_FRAME_PROFILE", "Новый профиль")
+L("AUTO_ACTIVATE_ON", "Автоматически задействовать")
+L("AUTO_ACTIVATE_PROFILE_NO_ENEMYTYPE", "Профиль не будет активироваться автоматически, пока вы не выберете PvP или PvE.")
+L("AUTO_ACTIVATE_PROFILE_NO_SIZE", "Профиль не будет активироваться автоматически, пока вы не выберете размер группы.")
+L("RESET_POSITION", "Сброс позиции")
+L("DONT_SAVE", "Не сохранять")
+L("NEW_COMPACT_UNIT_FRAME_PROFILE", "Новый профиль")
+L("USE_EXISTING_PROFILE", "Импортировать из:")
+L("GROUP_NUMBER", "%d-я группа")
+L("TALL", "Выше")
+L("NARROW", "Уже")
+L("WIDE", "Шире")
+L("UNLOCK", "Открепить")
+L("SHOW", "Показать")
+L("ALL_ASSIST_LABEL_LONG", "Назначить всех помощниками")
+L("ALL_ASSIST_DESCRIPTION", "Все участники рейда получают права помощника лидера рейда.")
+L("ALL_ASSIST_NOT_LEADER_ERROR", "Эту настройку может менять только лидер рейда.")
+L("RAID_MEMBERS", "Участники рейда")
+L("PARTY_MEMBERS", "Участники группы")
+L("ROLE_POLL", "Проверка ролей")
+L("CONFIRM_COMPACT_UNIT_FRAME_PROFILE_UNSAVED_CHANGES", "Профиль |cffffffff%s|r содержит несохраненные изменения, которые будут потеряны при выполнении этого действия. Хотите сохранить изменения?")
+L("CONFIRM_COMPACT_UNIT_FRAME_PROFILE_DELETION", "Вы уверены, что хотите удалить профиль |cffffffff%s|r?")
+L("OPTION_TOOLTIP_USE_RAID_STYLE_PARTY_FRAMES", "Использовать стиль и настройки интерфейса рейда для интерфейса группы.")
+L("COMPACT_UNIT_FRAME_PROFILES_LABEL", "Профили рейда")
+L("COMPACT_UNIT_FRAME_PROFILE_AUTOACTIVATE2PLAYERS", "в группе из 2 игроков")
+L("COMPACT_UNIT_FRAME_PROFILE_AUTOACTIVATE3PLAYERS", "в группе из 3 игроков")
+L("COMPACT_UNIT_FRAME_PROFILE_AUTOACTIVATE5PLAYERS", "в группе из 5 игроков")
+L("COMPACT_UNIT_FRAME_PROFILE_AUTOACTIVATE10PLAYERS", "в группе из 10 игроков")
+L("COMPACT_UNIT_FRAME_PROFILE_AUTOACTIVATE15PLAYERS", "в группе из 15 игроков")
+L("COMPACT_UNIT_FRAME_PROFILE_AUTOACTIVATE25PLAYERS", "в группе из 25 игроков")
+L("COMPACT_UNIT_FRAME_PROFILE_AUTOACTIVATE40PLAYERS", "в группе из 40 игроков")
+L("COMPACT_UNIT_FRAME_PROFILE_DISPLAYAGGROHIGHLIGHT", "Индикатор угрозы")
+L("COMPACT_UNIT_FRAME_PROFILE_DISPLAYBORDER", "Показывать границы")
+L("COMPACT_UNIT_FRAME_PROFILE_DISPLAYMAINTANKANDASSIST", "Показывать главного танка и наводчика")
+L("COMPACT_UNIT_FRAME_PROFILE_DISPLAYONLYDISPELLABLEDEBUFFS", "Только рассеиваемые отрицательные эффекты")
+L("COMPACT_UNIT_FRAME_PROFILE_DISPLAYPETS", "Показывать питомцев")
+L("COMPACT_UNIT_FRAME_PROFILE_DISPLAYPOWERBAR", "Индикаторы ресурсов")
+L("COMPACT_UNIT_FRAME_PROFILE_FRAMEHEIGHT", "Высота рамки рейда")
+L("COMPACT_UNIT_FRAME_PROFILE_FRAMEWIDTH", "Ширина рамки рейда")
+L("COMPACT_UNIT_FRAME_PROFILE_HEALTHTEXT", "Отображение здоровья")
+L("COMPACT_UNIT_FRAME_PROFILE_HEALTHTEXT_HEALTH", "Оставшееся здоровье")
+L("COMPACT_UNIT_FRAME_PROFILE_HEALTHTEXT_LOSTHEALTH", "Потерянное здоровье")
+L("COMPACT_UNIT_FRAME_PROFILE_HEALTHTEXT_PERC", "Здоровье в процентах")
+L("COMPACT_UNIT_FRAME_PROFILE_HORIZONTALGROUPS", "Горизонтально")
+L("COMPACT_UNIT_FRAME_PROFILE_KEEPGROUPSTOGETHER", "Группы вместе")
+L("COMPACT_UNIT_FRAME_PROFILE_SORTBY", "Сортировка:")
+L("COMPACT_UNIT_FRAME_PROFILE_SORTBY_ALPHABETICAL", "по алфавиту")
+L("COMPACT_UNIT_FRAME_PROFILE_USECLASSCOLORS", "Цвета классов")
+
+-- Options panel tabs and the "Always show" option (this addon's own strings)
+L("CRF_OPTIONS_TAB_GENERAL", "Общие")
+L("CRF_OPTIONS_TAB_DISPLAY", "Отображение")
+L("CRF_OPTIONS_TAB_AUTOACTIVATE", "Автовыбор")
+L("CRF_ALWAYS_SHOW_SOLO", "Всегда показывать (даже без группы)")
+L("CRF_ALWAYS_SHOW_SOLO_TOOLTIP", "Показывать рейдовые рамки и панель управления рейдом, даже если вы не состоите в группе.")

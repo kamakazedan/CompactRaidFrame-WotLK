@@ -7,8 +7,11 @@
     SILENTLY when missing (the inheriting widget just doesn't render / has no
     track), so they don't show up as Lua errors. Re-implemented here with native
     3.3.5a art so the addon is self-contained.
-      * HorizontalSliderTemplate     -> Frame Height / Frame Width sliders
-      * UIMenuButtonStretchTemplate   -> manager Lock/Unlock + Hide/Show buttons
+      * CRF_HorizontalSliderTemplate     -> Frame Height / Frame Width sliders
+      * CRF_UIMenuButtonStretchTemplate  -> manager Lock/Unlock + Hide/Show buttons
+    They carry a CRF_ prefix: virtual templates share one global namespace, so
+    re-using ClassicAPI's names would replace ClassicAPI's own versions for any
+    other addon loaded after this one (and vice versa).
     (DialogBorderDarkTemplate is replaced inline with a native <Backdrop> in
      CompactUnitFrameProfiles.xml.)
   -->
@@ -17,7 +20,7 @@
        (nil on 3.3.5a) via BackdropTemplateMixin, so the slider was invisible. This
        version draws the track with a native <Backdrop> (same art the stock
        OptionsSliderTemplate uses). -->
-  <Slider name="HorizontalSliderTemplate" orientation="HORIZONTAL" enableMouse="true" virtual="true">
+  <Slider name="CRF_HorizontalSliderTemplate" orientation="HORIZONTAL" enableMouse="true" virtual="true">
     <HitRectInsets>
       <AbsInset left="0" right="0" top="-10" bottom="-10" />
     </HitRectInsets>
@@ -27,7 +30,7 @@
   </Slider>
 
   <!-- Stretchy silver button (manager Lock/Hide toggles). Native UI-Silver-Button art. -->
-  <Button name="UIMenuButtonStretchTemplate" virtual="true">
+  <Button name="CRF_UIMenuButtonStretchTemplate" virtual="true">
     <Size x="40" y="26" />
     <Layers>
       <Layer level="BORDER">
@@ -95,7 +98,7 @@
     </Layers>
     <Scripts>
       <OnMouseDown>
-        if self:IsEnabled() ~= 0 then
+        if CRF_IsButtonEnabled(self) then
           self.TopLeft:SetTexture("Interface\\Buttons\\UI-Silver-Button-Down")
           self.TopRight:SetTexture("Interface\\Buttons\\UI-Silver-Button-Down")
           self.BottomLeft:SetTexture("Interface\\Buttons\\UI-Silver-Button-Down")
@@ -108,7 +111,7 @@
         end
       </OnMouseDown>
       <OnMouseUp>
-        if self:IsEnabled() ~= 0 then
+        if CRF_IsButtonEnabled(self) then
           self.TopLeft:SetTexture("Interface\\Buttons\\UI-Silver-Button-Up")
           self.TopRight:SetTexture("Interface\\Buttons\\UI-Silver-Button-Up")
           self.BottomLeft:SetTexture("Interface\\Buttons\\UI-Silver-Button-Up")

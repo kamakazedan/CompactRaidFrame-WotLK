@@ -412,11 +412,16 @@ end
 
 --========================================================================--
 -- 10. C_Timer (After / NewTimer / NewTicker) via a single OnUpdate scheduler.
+--     Another addon's shim may have created C_Timer with only some of these
+--     (often just After); fill in whichever are missing instead of skipping
+--     the whole block, or C_Timer.NewTimer would be nil for us.
 --========================================================================--
 if type(C_Timer) ~= "table" then
+    C_Timer = {}
+end
+if type(C_Timer.After) ~= "function" or type(C_Timer.NewTimer) ~= "function" or type(C_Timer.NewTicker) ~= "function" then
     local GetTime = GetTime
     local geterrorhandler = geterrorhandler
-    C_Timer = {}
 
     local timers = {}                 -- set of active timer objects
     local TimerMT = {}
@@ -485,14 +490,20 @@ if type(C_Timer) ~= "table" then
         return t
     end
 
-    function C_Timer.After(duration, callback)
-        newTimer(duration, callback, nil, false)
+    if type(C_Timer.After) ~= "function" then
+        function C_Timer.After(duration, callback)
+            newTimer(duration, callback, nil, false)
+        end
     end
-    function C_Timer.NewTimer(duration, callback)
-        return newTimer(duration, callback, nil, false)
+    if type(C_Timer.NewTimer) ~= "function" then
+        function C_Timer.NewTimer(duration, callback)
+            return newTimer(duration, callback, nil, false)
+        end
     end
-    function C_Timer.NewTicker(duration, callback, iterations)
-        return newTimer(duration, callback, iterations, true)
+    if type(C_Timer.NewTicker) ~= "function" then
+        function C_Timer.NewTicker(duration, callback, iterations)
+            return newTimer(duration, callback, iterations, true)
+        end
     end
 end
 
@@ -616,24 +627,28 @@ if type(CooldownFrame_Clear) ~= "function" then
 end
 
 --========================================================================--
--- 14. SOUNDKIT (checkbox click sound). PlaySoundFile needs a file path on
---     3.3.5a; we bundle the sound under Media\Sounds.
+-- 14. Sounds. The addon uses the client's own named UI sounds
+--     (PlaySound("igMainMenuOptionCheckBoxOn") etc.), so there is no SOUNDKIT
+--     table to provide any more (an older build overwrote the global SOUNDKIT
+--     entries, which could break other addons' sound shims).
 --========================================================================--
--- Our call sites use PlaySoundFile(SOUNDKIT.X), so the entries must be file
--- PATHS. If another addon's shim already defined them as retail NUMERIC sound
--- ids they are useless with PlaySoundFile on 3.3.5a -> replace those too
--- (hence type ~= "string" rather than a plain nil guard).
-SOUNDKIT = SOUNDKIT or {}
-if type(SOUNDKIT.IG_MAINMENU_OPTION_CHECKBOX_ON) ~= "string" then
-    SOUNDKIT.IG_MAINMENU_OPTION_CHECKBOX_ON = "Interface\\AddOns\\CompactRaidFrame\\Media\\Sounds\\SOUNDKIT\\856.ogg"
-end
-if type(SOUNDKIT.IG_MAINMENU_OPTION) ~= "string" then
-    SOUNDKIT.IG_MAINMENU_OPTION = "Interface\\AddOns\\CompactRaidFrame\\Media\\Sounds\\SOUNDKIT\\852.ogg"
-end
 
 --========================================================================--
 -- 15. Misc small helpers.
 --========================================================================--
+-- Button:IsEnabled() returns 1/nil or 1/0 depending on the client build (and
+-- true/false on later ones). `if btn:IsEnabled()` is wrong for 0 and
+-- `~= 0` is wrong for nil, so normalise it once here.
+function CRF_IsButtonEnabled(button)
+    local enabled = button and button:IsEnabled()
+    return (enabled and enabled ~= 0) and true or false
+end
+
+-- Group-size constants the addon expects from FrameXML. Only defined when the
+-- client hasn't (re-assigning a Blizzard global would taint it).
+if MAX_RAID_MEMBERS == nil then MAX_RAID_MEMBERS = 40 end
+if MAX_PARTY_MEMBERS == nil then MAX_PARTY_MEMBERS = 4 end
+if MEMBERS_PER_RAID_GROUP == nil then MEMBERS_PER_RAID_GROUP = 5 end
 if type(GMError) ~= "function" then
     function GMError(...) end  -- silent on a live client
 end

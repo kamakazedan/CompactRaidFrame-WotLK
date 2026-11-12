@@ -15,7 +15,7 @@
 local HealComm  = LibStub and LibStub:GetLibrary("LibHealComm-4.0", true)
 local LibAbsorb = LibStub and LibStub:GetLibrary("AbsorbsMonitor-1.0", true)
 
-local UnitGUID, UnitExists, GetTime = UnitGUID, UnitExists, GetTime
+local UnitGUID, GetTime, select, pairs, wipe = UnitGUID, GetTime, select, pairs, wipe
 
 --========================================================================--
 -- Incoming heals.  CompactUnitFrame_UpdateHealPrediction calls:
@@ -33,12 +33,22 @@ if HealComm then
         if not unit then return end
         local guid = UnitGUID(unit)
         if not guid then return end
+        local amount
         if healer then
             local hguid = UnitGUID(healer)
             if not hguid then return end
-            return HealComm:GetHealAmount(guid, HEAL_FLAGS, GetTime() + 5, hguid)
+            amount = HealComm:GetHealAmount(guid, HEAL_FLAGS, GetTime() + 5, hguid)
+        else
+            amount = HealComm:GetHealAmount(guid, HEAL_FLAGS, GetTime() + 5)
         end
-        return HealComm:GetHealAmount(guid, HEAL_FLAGS, GetTime() + 5)
+        if amount then
+            -- LibHealComm reports raw amounts and tracks the target's healing
+            -- modifier separately (Mortal Strike, Wound Poison, Aimed Shot,
+            -- Divine Hymn, ...); without this the bar over-predicted on
+            -- anyone with a healing debuff.
+            amount = amount * (HealComm:GetHealModifier(guid) or 1)
+        end
+        return amount
     end
 end
 
@@ -58,52 +68,91 @@ if LibAbsorb then
 end
 
 --========================================================================--
--- Per-frame callback wiring.  The libs broadcast global heal/absorb changes; we
--- re-flag the affected frame, and CompactUnitFrame's dirty-flag batching
--- (SetHealPredictionDirty -> OnUpdate) re-queries the real amount once per frame.
+-- Callback wiring.  The libs broadcast every heal/absorb change in range, with
+-- the affected GUIDs as arguments. One listener marks only the unit frames
+-- showing those GUIDs as dirty; CompactUnitFrame's dirty-flag batching
+-- (SetHealPredictionDirty -> OnUpdate) then re-queries the amounts once per
+-- frame. (An older build registered every unit frame as its own listener and
+-- dirtied ALL of them on every single heal anywhere in the raid.)
 --========================================================================--
-local function FireEvent(self, event)
-    if CompactUnitFrame_OnEvent then
-        CompactUnitFrame_OnEvent(self, event, self.unit or self.displayedUnit)
+local unitFrames = {}   -- every compact unit frame created (they are never destroyed)
+local dirtyGUIDs = {}
+
+local function MarkDirty()
+    for frame in pairs(unitFrames) do
+        local unit = frame.unit
+        if unit then
+            local guid = UnitGUID(frame.displayedUnit or unit)
+            if guid and dirtyGUIDs[guid] then
+                CompactUnitFrame_SetHealPredictionDirty(frame)
+            end
+        end
+    end
+    wipe(dirtyGUIDs)
+end
+
+local function MarkGUID(guid)
+    if guid then
+        dirtyGUIDs[guid] = true
+        MarkDirty()
     end
 end
 
-local function HealCallback(self)
-    if self.unit and UnitExists(self.unit) and UnitGUID(self.unit) then
-        FireEvent(self, "UNIT_HEAL_PREDICTION")
+local function MarkGUIDs(...)
+    local any
+    for i = 1, select("#", ...) do
+        local guid = select(i, ...)
+        if guid then
+            dirtyGUIDs[guid] = true
+            any = true
+        end
+    end
+    if any then
+        MarkDirty()
     end
 end
 
-local function AbsorbCallback(self)
-    if self.unit and UnitExists(self.unit) and UnitGUID(self.unit) then
-        FireEvent(self, "UNIT_ABSORB_AMOUNT_CHANGED")
-    end
+-- HealComm_HealStarted / Updated / Delayed (casterGUID, spellID, bitType, endTime, ...targets)
+-- HealComm_HealStopped (casterGUID, spellID, bitType, interrupted, ...targets)
+local function OnHealEvent(event, casterGUID, spellID, bitType, endTimeOrInterrupted, ...)
+    MarkGUIDs(...)
 end
 
+-- HealComm_ModifierChanged (guid, modifier) / HealComm_GUIDDisappeared (guid)
+-- AbsorbsMonitor EffectUpdated / EffectRemoved / UnitUpdated / UnitCleared (guid, ...)
+local function OnGUIDEvent(event, guid)
+    MarkGUID(guid)
+end
+
+-- AbsorbsMonitor EffectApplied (sourceGUID, sourceName, destGUID, ...)
+local function OnAbsorbApplied(event, sourceGUID, sourceName, destGUID)
+    MarkGUID(destGUID)
+end
+
+local listener = {}
+if HealComm then
+    HealComm.RegisterCallback(listener, "HealComm_HealStarted",     OnHealEvent)
+    HealComm.RegisterCallback(listener, "HealComm_HealUpdated",     OnHealEvent)
+    HealComm.RegisterCallback(listener, "HealComm_HealDelayed",     OnHealEvent)
+    HealComm.RegisterCallback(listener, "HealComm_HealStopped",     OnHealEvent)
+    HealComm.RegisterCallback(listener, "HealComm_ModifierChanged", OnGUIDEvent)
+    HealComm.RegisterCallback(listener, "HealComm_GUIDDisappeared", OnGUIDEvent)
+end
+if LibAbsorb then
+    LibAbsorb.RegisterCallback(listener, "EffectApplied", OnAbsorbApplied)
+    LibAbsorb.RegisterCallback(listener, "EffectUpdated", OnGUIDEvent)
+    LibAbsorb.RegisterCallback(listener, "EffectRemoved", OnGUIDEvent)
+    LibAbsorb.RegisterCallback(listener, "UnitUpdated",   OnGUIDEvent)
+    LibAbsorb.RegisterCallback(listener, "UnitCleared",   OnGUIDEvent)
+end
+
+-- Registers a unit frame for heal/absorb refreshes (kept under its old name).
 function CompactUnitFrame_RegisterCallback(self)
-    if self._crfHealAbsorbRegistered then return end
-    self._crfHealAbsorbRegistered = true
-
-    if HealComm then
-        HealComm.RegisterCallback(self, "HealComm_HealStarted",     HealCallback, self)
-        HealComm.RegisterCallback(self, "HealComm_HealUpdated",     HealCallback, self)
-        HealComm.RegisterCallback(self, "HealComm_HealDelayed",     HealCallback, self)
-        HealComm.RegisterCallback(self, "HealComm_HealStopped",     HealCallback, self)
-        HealComm.RegisterCallback(self, "HealComm_ModifierChanged", HealCallback, self)
-        HealComm.RegisterCallback(self, "HealComm_GUIDDisappeared", HealCallback, self)
-    end
-
-    if LibAbsorb then
-        LibAbsorb.RegisterCallback(self, "EffectApplied", AbsorbCallback, self)
-        LibAbsorb.RegisterCallback(self, "EffectUpdated", AbsorbCallback, self)
-        LibAbsorb.RegisterCallback(self, "EffectRemoved", AbsorbCallback, self)
-        LibAbsorb.RegisterCallback(self, "UnitUpdated",   AbsorbCallback, self)
-        LibAbsorb.RegisterCallback(self, "UnitCleared",   AbsorbCallback, self)
-    end
+    unitFrames[self] = true
 end
 
 -- The source's CompactUnitFrame_OnLoad does not register lib callbacks (the
--- standalone's did). Hook it so every unit frame wires up on creation.
+-- standalone's did). Hook it so every unit frame is tracked on creation.
 if (HealComm or LibAbsorb) and type(CompactUnitFrame_OnLoad) == "function" then
     hooksecurefunc("CompactUnitFrame_OnLoad", function(self)
         CompactUnitFrame_RegisterCallback(self)

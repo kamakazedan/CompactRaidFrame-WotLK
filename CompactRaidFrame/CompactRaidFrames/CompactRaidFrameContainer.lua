@@ -1,4 +1,7 @@
-MAX_RAID_GROUPS = 8;
+-- Only define it if the client doesn't (re-assigning a Blizzard global taints it).
+if ( MAX_RAID_GROUPS == nil ) then
+    MAX_RAID_GROUPS = 8;
+end
 
 local _;
 local PLAYER_ZONE_TYPE;
@@ -157,6 +160,12 @@ end
 --Internally used functions
 function CompactRaidFrameContainer_TryUpdate(self)
     if ( CompactRaidFrameContainer_ReadyToUpdate(self) ) then
+        if ( InCombatLockdown() ) then
+            -- Laying out assigns units and moves/resizes secure unit buttons,
+            -- which is blocked in combat. Redo it when combat ends.
+            PLAYER_REGEN_ENABLED_AWAIT = true;
+            return;
+        end
         CompactRaidFrameContainer_LayoutFrames(self);
     end
 end

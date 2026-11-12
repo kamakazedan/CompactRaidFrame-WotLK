@@ -1,53 +1,63 @@
 if ( GetLocale() ~= "frFR" ) then return end
 
-AUTO_ACTIVATE_DISABLED_IN_PARTY = "L'option Interface de type raid doit être cochée pour l'activer automatiquement pour ce nombre de joueurs."
-USE_RAID_STYLE_PARTY_FRAMES = "Utiliser interface de type raid"
-CREATE_NEW_COMPACT_UNIT_FRAME_PROFILE = "Créer un nouveau profil"
-AUTO_ACTIVATE_ON = "Auto-activation sur :"
-AUTO_ACTIVATE_PROFILE_NO_ENEMYTYPE = "Le profil ne sera jamais auto-activé. L'option JcJ ou JcE doit être choisie."
-AUTO_ACTIVATE_PROFILE_NO_SIZE = "Le profil ne sera jamais auto-activé. Aucune taille de groupe n'est choisie."
-RESET_POSITION = "Position par défaut"
-DONT_SAVE = "Ne pas sauvegarder"
-NEW_COMPACT_UNIT_FRAME_PROFILE = "Nouveau profil"
-USE_EXISTING_PROFILE = "Utiliser comme point de départ :"
-GROUP_NUMBER = "Groupe %d"
-TALL = "Haut"
-NARROW = "Étroit"
-WIDE = "Large"
-UNLOCK = "Déverrouiller"
-SHOW = "Afficher"
-ALL_ASSIST_LABEL_LONG = "Tous assistants"
-ALL_ASSIST_DESCRIPTION = "Si cette option est cochée, tous les membres du raid auront les autorisations d'assistant raid."
-ALL_ASSIST_NOT_LEADER_ERROR = "Seul le chef de raid peut modifier cette option."
-RAID_MEMBERS = "Membres"
-PARTY_MEMBERS = "Participants"
-ROLE_POLL = "Vérification rôles"
-CONFIRM_COMPACT_UNIT_FRAME_PROFILE_UNSAVED_CHANGES = "|cffffffff%s|r contient des changements non sauvegardés qui seront perdus si vous effectuez cette action. Voulez-vous sauvegarder avant de continuer ?"
-CONFIRM_COMPACT_UNIT_FRAME_PROFILE_DELETION = "Voulez-vous vraiment effacer définitivement |cffffffff%s|r ?"
-OPTION_TOOLTIP_USE_RAID_STYLE_PARTY_FRAMES = "Utilise des fenêtres de groupe avec le même style que les fenêtres de raid. Ces fenêtres respectent vos options de fenêtres de raid."
-COMPACT_UNIT_FRAME_PROFILES_LABEL = "Profils de raid"
-COMPACT_UNIT_FRAME_PROFILE_AUTOACTIVATE2PLAYERS = "Groupe de 2 joueurs"
-COMPACT_UNIT_FRAME_PROFILE_AUTOACTIVATE3PLAYERS = "Groupe de 3 joueurs"
-COMPACT_UNIT_FRAME_PROFILE_AUTOACTIVATE5PLAYERS = "Groupe de 5 joueurs"
-COMPACT_UNIT_FRAME_PROFILE_AUTOACTIVATE10PLAYERS = "Groupe de 10 joueurs"
-COMPACT_UNIT_FRAME_PROFILE_AUTOACTIVATE15PLAYERS = "Groupe de 15 joueurs"
-COMPACT_UNIT_FRAME_PROFILE_AUTOACTIVATE25PLAYERS = "Groupe de 25 joueurs"
-COMPACT_UNIT_FRAME_PROFILE_AUTOACTIVATE40PLAYERS = "Groupe de 40 joueurs"
-COMPACT_UNIT_FRAME_PROFILE_AUTOACTIVATEPVE = "JcE"
-COMPACT_UNIT_FRAME_PROFILE_DISPLAYAGGROHIGHLIGHT = "Emphase de menace"
-COMPACT_UNIT_FRAME_PROFILE_DISPLAYBORDER = "Afficher les bordures"
-COMPACT_UNIT_FRAME_PROFILE_DISPLAYMAINTANKANDASSIST = "Tanks principaux et soutiens"
-COMPACT_UNIT_FRAME_PROFILE_DISPLAYONLYDISPELLABLEDEBUFFS = "Affaiblissements dissipables uniquement"
-COMPACT_UNIT_FRAME_PROFILE_DISPLAYPETS = "Familiers"
-COMPACT_UNIT_FRAME_PROFILE_DISPLAYPOWERBAR = "Barres d'énergies"
-COMPACT_UNIT_FRAME_PROFILE_FRAMEHEIGHT = "Hauteur de la fenêtre"
-COMPACT_UNIT_FRAME_PROFILE_FRAMEWIDTH = "Largeur de la fenêtre"
-COMPACT_UNIT_FRAME_PROFILE_HEALTHTEXT = "Affichage du texte de vie"
-COMPACT_UNIT_FRAME_PROFILE_HEALTHTEXT_HEALTH = "Points de vie restants"
-COMPACT_UNIT_FRAME_PROFILE_HEALTHTEXT_LOSTHEALTH = "Points de vie perdus"
-COMPACT_UNIT_FRAME_PROFILE_HEALTHTEXT_PERC = "Pourcentage de points de vie"
-COMPACT_UNIT_FRAME_PROFILE_HORIZONTALGROUPS = "Groupes horizontaux"
-COMPACT_UNIT_FRAME_PROFILE_KEEPGROUPSTOGETHER = "Groupes solidarisés"
-COMPACT_UNIT_FRAME_PROFILE_SORTBY = "Trier par :"
-COMPACT_UNIT_FRAME_PROFILE_SORTBY_ALPHABETICAL = "Alphabétique"
-COMPACT_UNIT_FRAME_PROFILE_USECLASSCOLORS = "Couleurs de classe"
+-- Only overrides strings the client doesn't define itself (see enUS.lua).
+local L = CRF_SetLocaleString
+
+L("AUTO_ACTIVATE_DISABLED_IN_PARTY", "L'option Interface de type raid doit être cochée pour l'activer automatiquement pour ce nombre de joueurs.")
+L("USE_RAID_STYLE_PARTY_FRAMES", "Utiliser interface de type raid")
+L("CREATE_NEW_COMPACT_UNIT_FRAME_PROFILE", "Créer un nouveau profil")
+L("AUTO_ACTIVATE_ON", "Auto-activation sur :")
+L("AUTO_ACTIVATE_PROFILE_NO_ENEMYTYPE", "Le profil ne sera jamais auto-activé. L'option JcJ ou JcE doit être choisie.")
+L("AUTO_ACTIVATE_PROFILE_NO_SIZE", "Le profil ne sera jamais auto-activé. Aucune taille de groupe n'est choisie.")
+L("RESET_POSITION", "Position par défaut")
+L("DONT_SAVE", "Ne pas sauvegarder")
+L("NEW_COMPACT_UNIT_FRAME_PROFILE", "Nouveau profil")
+L("USE_EXISTING_PROFILE", "Utiliser comme point de départ :")
+L("GROUP_NUMBER", "Groupe %d")
+L("TALL", "Haut")
+L("NARROW", "Étroit")
+L("WIDE", "Large")
+L("UNLOCK", "Déverrouiller")
+L("SHOW", "Afficher")
+L("ALL_ASSIST_LABEL_LONG", "Tous assistants")
+L("ALL_ASSIST_DESCRIPTION", "Si cette option est cochée, tous les membres du raid auront les autorisations d'assistant raid.")
+L("ALL_ASSIST_NOT_LEADER_ERROR", "Seul le chef de raid peut modifier cette option.")
+L("RAID_MEMBERS", "Membres")
+L("PARTY_MEMBERS", "Participants")
+L("ROLE_POLL", "Vérification rôles")
+L("CONFIRM_COMPACT_UNIT_FRAME_PROFILE_UNSAVED_CHANGES", "|cffffffff%s|r contient des changements non sauvegardés qui seront perdus si vous effectuez cette action. Voulez-vous sauvegarder avant de continuer ?")
+L("CONFIRM_COMPACT_UNIT_FRAME_PROFILE_DELETION", "Voulez-vous vraiment effacer définitivement |cffffffff%s|r ?")
+L("OPTION_TOOLTIP_USE_RAID_STYLE_PARTY_FRAMES", "Utilise des fenêtres de groupe avec le même style que les fenêtres de raid. Ces fenêtres respectent vos options de fenêtres de raid.")
+L("COMPACT_UNIT_FRAME_PROFILES_LABEL", "Profils de raid")
+L("COMPACT_UNIT_FRAME_PROFILE_AUTOACTIVATE2PLAYERS", "Groupe de 2 joueurs")
+L("COMPACT_UNIT_FRAME_PROFILE_AUTOACTIVATE3PLAYERS", "Groupe de 3 joueurs")
+L("COMPACT_UNIT_FRAME_PROFILE_AUTOACTIVATE5PLAYERS", "Groupe de 5 joueurs")
+L("COMPACT_UNIT_FRAME_PROFILE_AUTOACTIVATE10PLAYERS", "Groupe de 10 joueurs")
+L("COMPACT_UNIT_FRAME_PROFILE_AUTOACTIVATE15PLAYERS", "Groupe de 15 joueurs")
+L("COMPACT_UNIT_FRAME_PROFILE_AUTOACTIVATE25PLAYERS", "Groupe de 25 joueurs")
+L("COMPACT_UNIT_FRAME_PROFILE_AUTOACTIVATE40PLAYERS", "Groupe de 40 joueurs")
+L("COMPACT_UNIT_FRAME_PROFILE_AUTOACTIVATEPVE", "JcE")
+L("COMPACT_UNIT_FRAME_PROFILE_DISPLAYAGGROHIGHLIGHT", "Emphase de menace")
+L("COMPACT_UNIT_FRAME_PROFILE_DISPLAYBORDER", "Afficher les bordures")
+L("COMPACT_UNIT_FRAME_PROFILE_DISPLAYMAINTANKANDASSIST", "Tanks principaux et soutiens")
+L("COMPACT_UNIT_FRAME_PROFILE_DISPLAYONLYDISPELLABLEDEBUFFS", "Affaiblissements dissipables uniquement")
+L("COMPACT_UNIT_FRAME_PROFILE_DISPLAYPETS", "Familiers")
+L("COMPACT_UNIT_FRAME_PROFILE_DISPLAYPOWERBAR", "Barres d'énergies")
+L("COMPACT_UNIT_FRAME_PROFILE_FRAMEHEIGHT", "Hauteur de la fenêtre")
+L("COMPACT_UNIT_FRAME_PROFILE_FRAMEWIDTH", "Largeur de la fenêtre")
+L("COMPACT_UNIT_FRAME_PROFILE_HEALTHTEXT", "Affichage du texte de vie")
+L("COMPACT_UNIT_FRAME_PROFILE_HEALTHTEXT_HEALTH", "Points de vie restants")
+L("COMPACT_UNIT_FRAME_PROFILE_HEALTHTEXT_LOSTHEALTH", "Points de vie perdus")
+L("COMPACT_UNIT_FRAME_PROFILE_HEALTHTEXT_PERC", "Pourcentage de points de vie")
+L("COMPACT_UNIT_FRAME_PROFILE_HORIZONTALGROUPS", "Groupes horizontaux")
+L("COMPACT_UNIT_FRAME_PROFILE_KEEPGROUPSTOGETHER", "Groupes solidarisés")
+L("COMPACT_UNIT_FRAME_PROFILE_SORTBY", "Trier par :")
+L("COMPACT_UNIT_FRAME_PROFILE_SORTBY_ALPHABETICAL", "Alphabétique")
+L("COMPACT_UNIT_FRAME_PROFILE_USECLASSCOLORS", "Couleurs de classe")
+
+-- Options panel tabs and the "Always show" option (this addon's own strings)
+L("CRF_OPTIONS_TAB_GENERAL", "Général")
+L("CRF_OPTIONS_TAB_DISPLAY", "Affichage")
+L("CRF_OPTIONS_TAB_AUTOACTIVATE", "Auto-activation")
+L("CRF_ALWAYS_SHOW_SOLO", "Toujours afficher (même en solo)")
+L("CRF_ALWAYS_SHOW_SOLO_TOOLTIP", "Affiche les cadres de raid et le gestionnaire de raid même lorsque vous n'êtes pas en groupe.")

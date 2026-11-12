@@ -1,11 +1,15 @@
-NUM_RAID_ICONS = 8;
+-- Only define it if the client doesn't (re-assigning a Blizzard global taints it).
+if ( NUM_RAID_ICONS == nil ) then
+    NUM_RAID_ICONS = 8;
+end
 
 MINIMUM_RAID_CONTAINER_HEIGHT = 72;
 local RESIZE_HORIZONTAL_OUTSETS = 4;
 local RESIZE_VERTICAL_OUTSETS = 7;
 
 local UnitGroupRolesAssigned = C_UnitGroupRolesAssigned;
-local PLAYER_REGEN_ENABLED_AWAIT;
+local PLAYER_REGEN_ENABLED_AWAIT;   -- secure manager update postponed by combat
+local BOUNDS_UPDATE_AWAIT;          -- screen size/scale change postponed by combat
 
 local function  CompactRaidFrameManager_Toggle_OnLoad(self)
     local toggleButton = self.toggleButton;
@@ -74,60 +78,60 @@ function CompactRaidFrameManager_OnLoad(self)
     --Set up the options flow container
     FlowContainer_Initialize(self.displayFrame.optionsFlowContainer);
 
-    -- "Always show" checkbox (laid out by CompactRaidFrameManager_UpdateOptionsFlowContainer)
-    local check = CreateFrame("CheckButton", "CompactRaidFrameManagerDisplayFrameAlwaysShowCheck", self.displayFrame, "OptionsCheckButtonTemplate");
-    check:SetWidth(24);
-    check:SetHeight(24);
-    local checkText = _G[check:GetName().."Text"];
-    if ( checkText ) then
-        checkText:SetText("Always show (even when solo)");
-    end
-    check:SetScript("OnClick", function(button)
-        CRF_SetAlwaysEnabled(button:GetChecked() and true or false);
-    end);
-    check:SetScript("OnEnter", function(button)
-        GameTooltip:SetOwner(button, "ANCHOR_RIGHT");
-        GameTooltip:SetText("Show the compact raid frames even when you are not in a group.", nil, nil, nil, nil, 1);
-    end);
-    check:SetScript("OnLeave", function() GameTooltip:Hide(); end);
-    check:SetChecked(CRF_IsAlwaysEnabled());
-    self.displayFrame.alwaysShowCheck = check;
+    -- The "Always show (even when solo)" option now lives in the Raid Profiles
+    -- options panel (Interface > AddOns > Raid Profiles > General).
 end
 
-local settings = { --[["Managed",]] "Locked", "SortMode", "KeepGroupsTogether", "DisplayPets", "DisplayMainTankAndAssist", "IsShown", "ShowBorders" };
 function CompactRaidFrameManager_OnEvent(self, event, ...)
     if ( event == "PLAYER_REGEN_ENABLED" ) then
+        if ( BOUNDS_UPDATE_AWAIT ) then
+            BOUNDS_UPDATE_AWAIT = nil;
+            CompactRaidFrameManager_UpdateContainerBounds(self);
+        end
         if ( PLAYER_REGEN_ENABLED_AWAIT ) then
-            PLAYER_REGEN_ENABLED_AWAIT = nil;
-            CompactRaidFrameManager_UpdateVisibilityDriver(self);
-            RaidOptionsFrame_UpdatePartyFrames();
-            CompactRaidFrameManager_OnEvent(self, "PLAYER_ENTERING_WORLD");
+            CompactRaidFrameManager_UpdateAll(self);
         end
     elseif ( event == "RAID_TARGET_UPDATE" or event == "PLAYER_TARGET_CHANGED" ) then
         CompactRaidFrameManager_UpdateRaidIcons();
-    else
+    elseif ( event == "UNIT_FLAGS" or event == "PLAYER_FLAGS_CHANGED" or event == "PLAYER_ROLES_ASSIGNED" ) then
+        -- Text and plain (non-secure) buttons only, so this also runs in combat:
+        -- the alive/total counts no longer freeze until combat ends.
+        CompactRaidFrameManager_UpdateDisplayCounts(self);
+    elseif ( event == "DISPLAY_SIZE_CHANGED" or event == "UI_SCALE_CHANGED" ) then
         if ( InCombatLockdown() ) then
-            PLAYER_REGEN_ENABLED_AWAIT = true;
-        elseif ( event == "DISPLAY_SIZE_CHANGED" or event == "UI_SCALE_CHANGED" ) then
+            BOUNDS_UPDATE_AWAIT = true;
+        else
             CompactRaidFrameManager_UpdateContainerBounds(self);
-        elseif ( event == "GROUP_ROSTER_UPDATE" ) then -- or UPDATE_ACTIVE_BATTLEFIELD
-            RaidOptionsFrame_UpdatePartyFrames();
-            CompactRaidFrameManager_UpdateShown(self);
-            CompactRaidFrameManager_UpdateDisplayCounts(self);
-            CompactRaidFrameManager_UpdateLabel(self);
-            CompactRaidFrameManager_UpdateContainerLockVisibility(self);
-        elseif ( event == "UNIT_FLAGS" or event == "PLAYER_FLAGS_CHANGED" or event == "PLAYER_ROLES_ASSIGNED" ) then
-            CompactRaidFrameManager_UpdateDisplayCounts(self);
-        elseif ( event == "PLAYER_ENTERING_WORLD" ) then
-            CompactRaidFrameManager_UpdateVisibilityDriver(self);
-            CompactRaidFrameManager_UpdateShown(self);
-            CompactRaidFrameManager_UpdateDisplayCounts(self);
-            CompactRaidFrameManager_UpdateOptionsFlowContainer(self);
-            CompactRaidFrameManager_UpdateRaidIcons();
-        elseif ( event == "PARTY_LEADER_CHANGED" ) then
-            CompactRaidFrameManager_UpdateOptionsFlowContainer(self);
         end
+    elseif ( event == "GROUP_ROSTER_UPDATE" ) then -- or UPDATE_ACTIVE_BATTLEFIELD
+        CompactRaidFrameManager_UpdateDisplayCounts(self);
+        CompactRaidFrameManager_UpdateAll(self);
+    elseif ( event == "PLAYER_ENTERING_WORLD" or event == "PARTY_LEADER_CHANGED" ) then
+        CompactRaidFrameManager_UpdateAll(self);
     end
+end
+
+-- Everything that depends on group / visibility state. It shows, hides and
+-- resizes the secure manager and container, so in combat it is postponed and
+-- replayed (in full) on PLAYER_REGEN_ENABLED. Previously only part of the
+-- GROUP_ROSTER_UPDATE work was replayed, leaving e.g. the Raid/Party Members
+-- label and the container lock state stale after a roster change in combat.
+function CompactRaidFrameManager_UpdateAll(self)
+    self = self or CompactRaidFrameManager;
+    if ( InCombatLockdown() ) then
+        PLAYER_REGEN_ENABLED_AWAIT = true;
+        return false;
+    end
+    PLAYER_REGEN_ENABLED_AWAIT = nil;
+
+    CompactRaidFrameManager_UpdateVisibilityDriver(self);
+    RaidOptionsFrame_UpdatePartyFrames();
+    CompactRaidFrameManager_UpdateShown(self);
+    CompactRaidFrameManager_UpdateDisplayCounts(self);
+    CompactRaidFrameManager_UpdateLabel(self);
+    CompactRaidFrameManager_UpdateContainerLockVisibility(self);
+    CompactRaidFrameManager_UpdateRaidIcons();
+    return true;
 end
 
 function CompactRaidFrameManagerDisplayFrameProfileSelector_SetUp(self)
@@ -143,7 +147,7 @@ function CompactRaidFrameManagerDisplayFrameProfileSelector_Initialize()
         info.text = name;
         info.value = name;
         info.func = CompactRaidFrameManagerDisplayFrameProfileSelector_OnClick;
-        info.disabled  = UnitAffectingCombat("player");
+        info.disabled  = InCombatLockdown();
         info.checked = GetActiveRaidProfile() == info.value;
         info.isRadio = true;
         C_UIDropDownMenu_AddButton(info);
@@ -156,6 +160,11 @@ function CompactRaidFrameManagerDisplayFrameProfileSelector_OnClick(self)
 end
 
 function CompactRaidFrameManager_UpdateShown(self)
+    if ( InCombatLockdown() ) then
+        -- Show/Hide/SetHeight on the secure manager are blocked in combat.
+        PLAYER_REGEN_ENABLED_AWAIT = true;
+        return;
+    end
     if ( GetDisplayedAllyFrames() ) then
         self:Show();
     else
@@ -180,22 +189,9 @@ function CompactRaidFrameManager_UpdateVisibilityDriver(self)
     return true;
 end
 
--- Called by the "Always show" checkbox.
-function CRF_SetAlwaysEnabled(enabled)
-    CRF_AlwaysShow = enabled and true or false;
-    local manager = CompactRaidFrameManager;
-    if ( InCombatLockdown() ) then
-        -- Applied by the PLAYER_REGEN_ENABLED handler once combat ends.
-        PLAYER_REGEN_ENABLED_AWAIT = true;
-        return;
-    end
-    CompactRaidFrameManager_UpdateVisibilityDriver(manager);
-    RaidOptionsFrame_UpdatePartyFrames();
-    CompactRaidFrameManager_UpdateShown(manager);
-    CompactRaidFrameManager_UpdateDisplayCounts(manager);
-    CompactRaidFrameManager_UpdateLabel(manager);
-    CompactRaidFrameManager_UpdateContainerLockVisibility(manager);
-end
+-- CRF_SetAlwaysEnabled() (the "Always show" option) is defined in
+-- CUFProfiles\CUFProfilesAPI.lua; it saves the setting and calls
+-- CompactRaidFrameManager_UpdateAll().
 
 function CompactRaidFrameManager_UpdateLabel(self)
     if ( IsInRaid() ) then
@@ -288,15 +284,6 @@ function CompactRaidFrameManager_UpdateOptionsFlowContainer(self)
         self.displayFrame.everyoneIsAssistButton:Show();
     else
         self.displayFrame.everyoneIsAssistButton:Hide();
-    end
-
-    local alwaysShowCheck = self.displayFrame.alwaysShowCheck;
-    if ( alwaysShowCheck ) then
-        FlowContainer_AddLineBreak(container);
-        FlowContainer_AddSpacer(container, 20);
-        FlowContainer_AddObject(container, alwaysShowCheck);
-        alwaysShowCheck:SetChecked(CRF_IsAlwaysEnabled());
-        alwaysShowCheck:Show();
     end
 
     FlowContainer_ResumeUpdates(container);
@@ -652,6 +639,7 @@ function CompactRaidFrameManager_ResizeFrame_OnResizeStart(manager)
     manager.dynamicContainerPosition = false;
 
     manager.containerResizeFrame:StartSizing("BOTTOM")
+    manager.containerResizeFrame.timeSinceUpdate = 0;
     manager.containerResizeFrame:SetScript("OnUpdate", CompactRaidFrameManager_ResizeFrame_OnUpdate);
 end
 
@@ -667,6 +655,9 @@ local RESIZE_UPDATE_INTERVAL = 0.5;
 function CompactRaidFrameManager_ResizeFrame_OnUpdate(self, elapsed)
     self.timeSinceUpdate = (self.timeSinceUpdate or 0) + elapsed;
     if ( self.timeSinceUpdate >= RESIZE_UPDATE_INTERVAL ) then
+        -- Reset, or after the first half second this re-laid-out the
+        -- container on every single frame for the rest of the drag.
+        self.timeSinceUpdate = 0;
         local manager = self:GetParent();
         CompactRaidFrameManager_ResizeFrame_UpdateContainerSize(manager);
         CompactRaidFrameManager_ResizeFrame_CheckMagnetism(manager);
@@ -676,8 +667,10 @@ end
 
 function CompactRaidFrameManager_ResizeFrame_UpdateContainerSize(manager)
     --If we're flow style, we want to make sure we exactly fit N frames.
+    --(The setting is a boolean from the profile; the old `~= "1"` test was
+    -- always true, so the height was snapped even with Keep Groups Together.)
     local keepGroupsTogether = CompactRaidFrameManager_GetSetting("KeepGroupsTogether");
-    if ( keepGroupsTogether ~= "1" ) then
+    if ( not keepGroupsTogether or keepGroupsTogether == "0" ) then
         local unitFrameHeight = DefaultCompactUnitFrameSetupOptions.height;
         local resizerHeight = manager.containerResizeFrame:GetHeight() - RESIZE_VERTICAL_OUTSETS * 2;
         local newHeight = unitFrameHeight * floor(resizerHeight / unitFrameHeight);
@@ -825,13 +818,14 @@ end
 
 local roleValues = { MAINTANK = 1, MAINASSIST = 2, TANK = 3, HEALER = 4, DAMAGER = 5, NONE = 6 };
 function CRFSort_Role(token1, token2)
+    -- UnitInRaid is 0-based on 3.3.5a (raid1 -> 0), GetRaidRosterInfo 1-based.
     local id1, id2 = UnitInRaid(token1), UnitInRaid(token2);
     local role1, role2;
     if ( id1 ) then
-        role1 = select(10, GetRaidRosterInfo(id1));
+        role1 = select(10, GetRaidRosterInfo(id1 + 1));
     end
     if ( id2 ) then
-        role2 = select(10, GetRaidRosterInfo(id2));
+        role2 = select(10, GetRaidRosterInfo(id2 + 1));
     end
 
     role1 = role1 or UnitGroupRolesAssigned(token1);

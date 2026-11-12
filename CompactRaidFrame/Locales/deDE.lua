@@ -1,52 +1,62 @@
 if ( GetLocale() ~= "deDE" ) then return end
 
-AUTO_ACTIVATE_DISABLED_IN_PARTY = "Die Option \"Gruppen wie Schlachtzüge anz.\" muss aktiviert sein, damit Auto-Aktivierung bei dieser Anzahl Spieler ausgeführt werden kann."
-USE_RAID_STYLE_PARTY_FRAMES = "Gruppen wie Schlachtzüge anz."
-CREATE_NEW_COMPACT_UNIT_FRAME_PROFILE = "Neues Profil erstellen"
-AUTO_ACTIVATE_ON = "Auto-Aktivierung bei:"
-AUTO_ACTIVATE_PROFILE_NO_ENEMYTYPE = "Profil hat keine Auto-Aktivierung. Weder PvE- noch PvP-Modus gewählt."
-AUTO_ACTIVATE_PROFILE_NO_SIZE = "Profil hat keine Auto-Aktivierung. Keine Gruppengröße gewählt."
-RESET_POSITION = "Zurücksetzen"
-DONT_SAVE = "Nicht speichern"
-NEW_COMPACT_UNIT_FRAME_PROFILE = "Neues Profil"
-USE_EXISTING_PROFILE = "Als Ausgangspunkt verwenden:"
-GROUP_NUMBER = "Gruppe %d"
-TALL = "Lang"
-NARROW = "Schmal"
-WIDE = "Weit"
-UNLOCK = "Freischalten"
-SHOW = "Anzeigen"
-ALL_ASSIST_LABEL_LONG = "Alle zu Assistenten befördern"
-ALL_ASSIST_DESCRIPTION = "Wenn diese Option gewählt ist, haben alle Schlachtzugsmitglieder Schlachtzugsassistentenrechte."
-ALL_ASSIST_NOT_LEADER_ERROR = "Nur der Schlachtzugsleiter kann diese Option ändern."
-RAID_MEMBERS = "Schlachtzug"
-PARTY_MEMBERS = "Gruppenmitglieder"
-ROLE_POLL = "Rollenabfrage"
-CONFIRM_COMPACT_UNIT_FRAME_PROFILE_UNSAVED_CHANGES = "|cffffffff%s|r enthält ungespeicherte Änderungen, die verloren gehen werden, wenn diese Aktion ausgeführt wird. Möchtet Ihr speichern, bevor Ihr fortfahrt?"
-CONFIRM_COMPACT_UNIT_FRAME_PROFILE_DELETION = "Seid Ihr sicher, dass Ihr |cffffffff%s|r permanent löschen wollt?"
-OPTION_TOOLTIP_USE_RAID_STYLE_PARTY_FRAMES = "Benutzt Gruppenfenster im selben Stil wie Schlachtzugsfenster. Diese Fenster richten sich nach den Einstellungen für Schlachtzugsfenster."
-COMPACT_UNIT_FRAME_PROFILES_LABEL = "Schlachtzugsprofile"
-COMPACT_UNIT_FRAME_PROFILE_AUTOACTIVATE2PLAYERS = "2-Spieler-Gruppe"
-COMPACT_UNIT_FRAME_PROFILE_AUTOACTIVATE3PLAYERS = "3-Spieler-Gruppe"
-COMPACT_UNIT_FRAME_PROFILE_AUTOACTIVATE5PLAYERS = "5-Spieler-Gruppe"
-COMPACT_UNIT_FRAME_PROFILE_AUTOACTIVATE10PLAYERS = "10-Spieler-Gruppe"
-COMPACT_UNIT_FRAME_PROFILE_AUTOACTIVATE15PLAYERS = "15-Spieler-Gruppe"
-COMPACT_UNIT_FRAME_PROFILE_AUTOACTIVATE25PLAYERS = "25-Spieler-Gruppe"
-COMPACT_UNIT_FRAME_PROFILE_AUTOACTIVATE40PLAYERS = "40-Spieler-Gruppe"
-COMPACT_UNIT_FRAME_PROFILE_DISPLAYAGGROHIGHLIGHT = "Bedrohungsmarkierung"
-COMPACT_UNIT_FRAME_PROFILE_DISPLAYBORDER = "Rahmen anzeigen"
-COMPACT_UNIT_FRAME_PROFILE_DISPLAYMAINTANKANDASSIST = "Haupttank und -assistent anzeigen"
-COMPACT_UNIT_FRAME_PROFILE_DISPLAYONLYDISPELLABLEDEBUFFS = "Nur bannbare Schwächungszauber anzeigen"
-COMPACT_UNIT_FRAME_PROFILE_DISPLAYPETS = "Begleiter anzeigen"
-COMPACT_UNIT_FRAME_PROFILE_DISPLAYPOWERBAR = "Ressourcenbalken anzeigen"
-COMPACT_UNIT_FRAME_PROFILE_FRAMEHEIGHT = "Fensterhöhe"
-COMPACT_UNIT_FRAME_PROFILE_FRAMEWIDTH = "Fensterbreite"
-COMPACT_UNIT_FRAME_PROFILE_HEALTHTEXT = "Gesundheitstext anzeigen"
-COMPACT_UNIT_FRAME_PROFILE_HEALTHTEXT_HEALTH = "Verbleibende Gesundheit"
-COMPACT_UNIT_FRAME_PROFILE_HEALTHTEXT_LOSTHEALTH = "Verlorene Gesundheit"
-COMPACT_UNIT_FRAME_PROFILE_HEALTHTEXT_PERC = "Gesundheit in Prozent"
-COMPACT_UNIT_FRAME_PROFILE_HORIZONTALGROUPS = "Horizontale Gruppierung"
-COMPACT_UNIT_FRAME_PROFILE_KEEPGROUPSTOGETHER = "Gruppen zusammenhalten"
-COMPACT_UNIT_FRAME_PROFILE_SORTBY = "Sortieren nach:"
-COMPACT_UNIT_FRAME_PROFILE_SORTBY_ALPHABETICAL = "Alphabet"
-COMPACT_UNIT_FRAME_PROFILE_USECLASSCOLORS = "Klassenfarben anzeigen"
+-- Only overrides strings the client doesn't define itself (see enUS.lua).
+local L = CRF_SetLocaleString
+
+L("AUTO_ACTIVATE_DISABLED_IN_PARTY", "Die Option \"Gruppen wie Schlachtzüge anz.\" muss aktiviert sein, damit Auto-Aktivierung bei dieser Anzahl Spieler ausgeführt werden kann.")
+L("USE_RAID_STYLE_PARTY_FRAMES", "Gruppen wie Schlachtzüge anz.")
+L("CREATE_NEW_COMPACT_UNIT_FRAME_PROFILE", "Neues Profil erstellen")
+L("AUTO_ACTIVATE_ON", "Auto-Aktivierung bei:")
+L("AUTO_ACTIVATE_PROFILE_NO_ENEMYTYPE", "Profil hat keine Auto-Aktivierung. Weder PvE- noch PvP-Modus gewählt.")
+L("AUTO_ACTIVATE_PROFILE_NO_SIZE", "Profil hat keine Auto-Aktivierung. Keine Gruppengröße gewählt.")
+L("RESET_POSITION", "Zurücksetzen")
+L("DONT_SAVE", "Nicht speichern")
+L("NEW_COMPACT_UNIT_FRAME_PROFILE", "Neues Profil")
+L("USE_EXISTING_PROFILE", "Als Ausgangspunkt verwenden:")
+L("GROUP_NUMBER", "Gruppe %d")
+L("TALL", "Lang")
+L("NARROW", "Schmal")
+L("WIDE", "Weit")
+L("UNLOCK", "Freischalten")
+L("SHOW", "Anzeigen")
+L("ALL_ASSIST_LABEL_LONG", "Alle zu Assistenten befördern")
+L("ALL_ASSIST_DESCRIPTION", "Wenn diese Option gewählt ist, haben alle Schlachtzugsmitglieder Schlachtzugsassistentenrechte.")
+L("ALL_ASSIST_NOT_LEADER_ERROR", "Nur der Schlachtzugsleiter kann diese Option ändern.")
+L("RAID_MEMBERS", "Schlachtzug")
+L("PARTY_MEMBERS", "Gruppenmitglieder")
+L("ROLE_POLL", "Rollenabfrage")
+L("CONFIRM_COMPACT_UNIT_FRAME_PROFILE_UNSAVED_CHANGES", "|cffffffff%s|r enthält ungespeicherte Änderungen, die verloren gehen werden, wenn diese Aktion ausgeführt wird. Möchtet Ihr speichern, bevor Ihr fortfahrt?")
+L("CONFIRM_COMPACT_UNIT_FRAME_PROFILE_DELETION", "Seid Ihr sicher, dass Ihr |cffffffff%s|r permanent löschen wollt?")
+L("OPTION_TOOLTIP_USE_RAID_STYLE_PARTY_FRAMES", "Benutzt Gruppenfenster im selben Stil wie Schlachtzugsfenster. Diese Fenster richten sich nach den Einstellungen für Schlachtzugsfenster.")
+L("COMPACT_UNIT_FRAME_PROFILES_LABEL", "Schlachtzugsprofile")
+L("COMPACT_UNIT_FRAME_PROFILE_AUTOACTIVATE2PLAYERS", "2-Spieler-Gruppe")
+L("COMPACT_UNIT_FRAME_PROFILE_AUTOACTIVATE3PLAYERS", "3-Spieler-Gruppe")
+L("COMPACT_UNIT_FRAME_PROFILE_AUTOACTIVATE5PLAYERS", "5-Spieler-Gruppe")
+L("COMPACT_UNIT_FRAME_PROFILE_AUTOACTIVATE10PLAYERS", "10-Spieler-Gruppe")
+L("COMPACT_UNIT_FRAME_PROFILE_AUTOACTIVATE15PLAYERS", "15-Spieler-Gruppe")
+L("COMPACT_UNIT_FRAME_PROFILE_AUTOACTIVATE25PLAYERS", "25-Spieler-Gruppe")
+L("COMPACT_UNIT_FRAME_PROFILE_AUTOACTIVATE40PLAYERS", "40-Spieler-Gruppe")
+L("COMPACT_UNIT_FRAME_PROFILE_DISPLAYAGGROHIGHLIGHT", "Bedrohungsmarkierung")
+L("COMPACT_UNIT_FRAME_PROFILE_DISPLAYBORDER", "Rahmen anzeigen")
+L("COMPACT_UNIT_FRAME_PROFILE_DISPLAYMAINTANKANDASSIST", "Haupttank und -assistent anzeigen")
+L("COMPACT_UNIT_FRAME_PROFILE_DISPLAYONLYDISPELLABLEDEBUFFS", "Nur bannbare Schwächungszauber anzeigen")
+L("COMPACT_UNIT_FRAME_PROFILE_DISPLAYPETS", "Begleiter anzeigen")
+L("COMPACT_UNIT_FRAME_PROFILE_DISPLAYPOWERBAR", "Ressourcenbalken anzeigen")
+L("COMPACT_UNIT_FRAME_PROFILE_FRAMEHEIGHT", "Fensterhöhe")
+L("COMPACT_UNIT_FRAME_PROFILE_FRAMEWIDTH", "Fensterbreite")
+L("COMPACT_UNIT_FRAME_PROFILE_HEALTHTEXT", "Gesundheitstext anzeigen")
+L("COMPACT_UNIT_FRAME_PROFILE_HEALTHTEXT_HEALTH", "Verbleibende Gesundheit")
+L("COMPACT_UNIT_FRAME_PROFILE_HEALTHTEXT_LOSTHEALTH", "Verlorene Gesundheit")
+L("COMPACT_UNIT_FRAME_PROFILE_HEALTHTEXT_PERC", "Gesundheit in Prozent")
+L("COMPACT_UNIT_FRAME_PROFILE_HORIZONTALGROUPS", "Horizontale Gruppierung")
+L("COMPACT_UNIT_FRAME_PROFILE_KEEPGROUPSTOGETHER", "Gruppen zusammenhalten")
+L("COMPACT_UNIT_FRAME_PROFILE_SORTBY", "Sortieren nach:")
+L("COMPACT_UNIT_FRAME_PROFILE_SORTBY_ALPHABETICAL", "Alphabet")
+L("COMPACT_UNIT_FRAME_PROFILE_USECLASSCOLORS", "Klassenfarben anzeigen")
+
+-- Options panel tabs and the "Always show" option (this addon's own strings)
+L("CRF_OPTIONS_TAB_GENERAL", "Allgemein")
+L("CRF_OPTIONS_TAB_DISPLAY", "Anzeige")
+L("CRF_OPTIONS_TAB_AUTOACTIVATE", "Auto-Aktivierung")
+L("CRF_ALWAYS_SHOW_SOLO", "Immer anzeigen (auch ohne Gruppe)")
+L("CRF_ALWAYS_SHOW_SOLO_TOOLTIP", "Zeigt die Schlachtzugsfenster und die Schlachtzugsverwaltung auch an, wenn Ihr in keiner Gruppe seid.")
