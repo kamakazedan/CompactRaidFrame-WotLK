@@ -1,5 +1,19 @@
 # Compact Raid Frames (3.3.5a) - changelog
 
+## 1.20
+
+- The raid frames no longer end up under the side menu. Frames placed within
+  reach of the open menu are anchored to its edge, so opening it slides them
+  over (in combat too), and frames dropped onto the menu or its tab land right
+  beside it. Frames placed further right, or below the menu, stay where they
+  are.
+- Side bar: **Frame Height** and **Frame Width** sliders with the percentage,
+  between Groups and the preview. Like Groups, they apply and save straight
+  away (in combat the frames resize when combat ends).
+- The Groups dropdowns show a short name when closed, e.g. "Separate
+  (Horizontal)": the full name was cut off in the side bar. Their lists still
+  show the full names.
+
 ## 1.19
 
 ### New options

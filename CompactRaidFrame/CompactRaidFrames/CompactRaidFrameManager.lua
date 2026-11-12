@@ -7,6 +7,11 @@ MINIMUM_RAID_CONTAINER_HEIGHT = 72;
 local RESIZE_HORIZONTAL_OUTSETS = 4;
 local RESIZE_VERTICAL_OUTSETS = 7;
 
+-- The manager's left edge (UIParent TOPLEFT x offset) when collapsed / expanded.
+-- The secure toggle snippet below uses the same numbers.
+local MANAGER_COLLAPSED_X = -182;
+local MANAGER_EXPANDED_X = -7;
+
 local UnitGroupRolesAssigned = C_UnitGroupRolesAssigned;
 local PLAYER_REGEN_ENABLED_AWAIT;   -- secure manager update postponed by combat
 local BOUNDS_UPDATE_AWAIT;          -- screen size/scale change postponed by combat
@@ -168,6 +173,8 @@ function CompactRaidFrameManager_OnLoad(self)
     self.displayFrame.resetPosition:SetText(RESET_POSITION or "Reset Position");
     C_UIDropDownMenu_SetWidth(self.displayFrame.groupsSelector, 165);
     C_UIDropDownMenu_SetWidth(self.displayFrame.previewSelector, 165);
+    CompactRaidFrameManager_SetUpFrameSizeSlider(self.displayFrame.frameSize.height, "frameHeight", 36, 96);
+    CompactRaidFrameManager_SetUpFrameSizeSlider(self.displayFrame.frameSize.width, "frameWidth", 72, 186);
 
     --Set up the options flow container
     FlowContainer_Initialize(self.displayFrame.optionsFlowContainer);
@@ -262,7 +269,7 @@ end
 function CompactRaidFrameManagerDisplayFrameGroupsSelector_SetUp(self)
     C_UIDropDownMenu_SetWidth(self, 165);
     C_UIDropDownMenu_Initialize(self, CompactRaidFrameManagerDisplayFrameGroupsSelector_Initialize);
-    C_UIDropDownMenu_SetText(self, CRF_GetGroupLayoutText(CRF_GetGroupLayout(GetActiveRaidProfile())));
+    C_UIDropDownMenu_SetText(self, CRF_GetGroupLayoutText(CRF_GetGroupLayout(GetActiveRaidProfile()), true));
 end
 
 function CompactRaidFrameManagerDisplayFrameGroupsSelector_Initialize()
@@ -306,8 +313,50 @@ end
 -- changes made in the options panel, preview on/off).
 function CompactRaidFrameManager_UpdateLayoutSelectors()
     local displayFrame = CompactRaidFrameManager.displayFrame;
-    C_UIDropDownMenu_SetText(displayFrame.groupsSelector, CRF_GetGroupLayoutText(CRF_GetGroupLayout(GetActiveRaidProfile())));
+    C_UIDropDownMenu_SetText(displayFrame.groupsSelector, CRF_GetGroupLayoutText(CRF_GetGroupLayout(GetActiveRaidProfile()), true));
     C_UIDropDownMenu_SetText(displayFrame.previewSelector, CRF_GetRaidPreviewLabel(CRF_GetRaidPreviewSize()));
+    CompactRaidFrameManager_UpdateFrameSizeSlider(displayFrame.frameSize.height);
+    CompactRaidFrameManager_UpdateFrameSizeSlider(displayFrame.frameSize.width);
+end
+
+-- Frame height / width: the active profile's size, applied and saved at once
+-- (like the Groups dropdown). The number is the slider's position in its
+-- range, as on the options panel's Layout tab.
+function CompactRaidFrameManager_SetUpFrameSizeSlider(slider, optionName, minValue, maxValue)
+    slider.optionName = optionName;
+    slider.label:SetText(_G["COMPACT_UNIT_FRAME_PROFILE_"..strupper(optionName)]);
+    CompactUnitFrameProfilesSlider_SetTrack(slider);
+    slider:SetMinMaxValues(minValue, maxValue);
+    slider:SetValueStep(2);
+    CompactRaidFrameManager_UpdateFrameSizeSlider(slider);
+end
+
+function CompactRaidFrameManager_UpdateFrameSizeSlider(slider)
+    local profile = GetActiveRaidProfile();
+    local value = profile and GetRaidProfileOption(profile, slider.optionName);
+    if ( value ) then
+        slider.isUpdating = true;
+        slider:SetValue(value);
+        slider.isUpdating = nil;
+    end
+    CompactUnitFrameProfilesSlider_UpdateValueText(slider);
+end
+
+function CompactRaidFrameManagerFrameSizeSlider_OnValueChanged(self, value)
+    value = floor(value + 0.5);
+    CompactUnitFrameProfilesSlider_UpdateValueText(self, value);
+    if ( self.isUpdating ) then
+        return;     -- set from the profile, not dragged
+    end
+    local profile = GetActiveRaidProfile();
+    if ( not profile or GetRaidProfileOption(profile, self.optionName) == value ) then
+        return;
+    end
+    CRF_SetRaidProfileOptionSaved(profile, self.optionName, value);
+    CompactUnitFrameProfiles_ApplyProfile(profile);     -- waits for the end of combat if needed
+    if ( CompactUnitFrameProfiles:IsVisible() ) then
+        CompactUnitFrameProfiles_UpdateCurrentPanel();
+    end
 end
 
 --------------------------------------------------------------------------
@@ -441,14 +490,14 @@ end
 
 function CompactRaidFrameManager_Expand(self)
     self.collapsed = false;
-    self:SetPoint("TOPLEFT", UIParent, "TOPLEFT", -7, -140);
+    self:SetPoint("TOPLEFT", UIParent, "TOPLEFT", MANAGER_EXPANDED_X, -140);
     self.displayFrame:Show();
     self.toggleButton:GetNormalTexture():SetTexCoord(0.5, 1, 0, 1);
 end
 
 function CompactRaidFrameManager_Collapse(self)
     self.collapsed = true;
-    self:SetPoint("TOPLEFT", UIParent, "TOPLEFT", -182, -140);
+    self:SetPoint("TOPLEFT", UIParent, "TOPLEFT", MANAGER_COLLAPSED_X, -140);
     self.displayFrame:Hide();
     self.toggleButton:GetNormalTexture():SetTexCoord(0, 0.5, 0, 1);
 end
@@ -466,15 +515,19 @@ function CompactRaidFrameManager_UpdateOptionsFlowContainer(self)
         FlowContainer_AddLineBreak(container);
         FlowContainer_AddObject(container, self.displayFrame.groupsSelector);
         FlowContainer_AddLineBreak(container);
+        FlowContainer_AddObject(container, self.displayFrame.frameSize);
+        FlowContainer_AddLineBreak(container);
         FlowContainer_AddObject(container, self.displayFrame.previewSelector);
         FlowContainer_AddLineBreak(container);
         self.displayFrame.profileSelector:Show();
         self.displayFrame.groupsSelector:Show();
+        self.displayFrame.frameSize:Show();
         self.displayFrame.previewSelector:Show();
         CompactRaidFrameManager_UpdateLayoutSelectors();
     else
         self.displayFrame.profileSelector:Hide();
         self.displayFrame.groupsSelector:Hide();
+        self.displayFrame.frameSize:Hide();
         self.displayFrame.previewSelector:Hide();
     end
 
@@ -538,6 +591,9 @@ function CompactRaidFrameManager_UpdateOptionsFlowContainer(self)
 
     local usedX, usedY = FlowContainer_GetUsedBounds(container);
     self:SetHeight(usedY + 40);
+    if ( not self.dynamicContainerPosition ) then
+        CompactRaidFrameManager_ResizeFrame_KeepClearOfMenu(self);
+    end
 
     --Then, we update which specific buttons are enabled.
 
@@ -843,8 +899,7 @@ function CompactRaidFrameManager_UpdateContainerBounds(self) --Hah, "Bounds" ins
 
         local managerTop = self:GetTop();
 
-        self.containerResizeFrame:ClearAllPoints();
-        self.containerResizeFrame:SetPoint("TOPLEFT", self, "TOPRIGHT", 0, top - managerTop);
+        CompactRaidFrameManager_ResizeFrame_AnchorToMenu(self, 0, top);
         self.containerResizeFrame:SetHeight(top - bottom);
 
         CompactRaidFrameManager_ResizeFrame_UpdateContainerSize(self);
@@ -868,12 +923,53 @@ function CompactRaidFrameManager_UnlockContainer(self)
 end
 
 --ResizeFrame related functions
+
+-- The raid frames must never end up under the side menu. Any position within
+-- reach of the open menu (left of its right edge, level with it) is anchored
+-- to the menu's right edge instead of the screen, keeping its distance from
+-- the closed tab: opening the menu then slides the frames along, also in
+-- combat, as the secure toggle only moves the manager. Positions further right
+-- stay where they are. manager.containerMenuOffset is that distance, or nil
+-- while the frames are placed on the screen.
+function CompactRaidFrameManager_ResizeFrame_AnchorToMenu(manager, offset, top)
+    manager.containerResizeFrame:ClearAllPoints();
+    manager.containerResizeFrame:SetPoint("TOPLEFT", manager, "TOPRIGHT", offset, top - manager:GetTop());
+    manager.containerMenuOffset = offset;
+end
+
+local function CompactRaidFrameManager_GetCollapsedRight(manager)
+    return MANAGER_COLLAPSED_X + manager:GetWidth();
+end
+
+function CompactRaidFrameManager_ResizeFrame_IsInMenuReach(manager, left, top, bottom)
+    local managerTop, managerBottom = manager:GetTop(), manager:GetBottom();
+    if ( not (left and top and bottom and managerTop and managerBottom) ) then
+        return false;
+    end
+    return left < MANAGER_EXPANDED_X + manager:GetWidth() and top > managerBottom and bottom < managerTop;
+end
+
+-- After the frames were dropped somewhere on the screen.
+function CompactRaidFrameManager_ResizeFrame_KeepClearOfMenu(manager)
+    if ( manager.containerMenuOffset or InCombatLockdown() ) then
+        return;     -- already following, or the frames can't be re-anchored now
+    end
+    local resizeFrame = manager.containerResizeFrame;
+    local left, top, bottom = resizeFrame:GetLeft(), resizeFrame:GetTop(), resizeFrame:GetBottom();
+    if ( CompactRaidFrameManager_ResizeFrame_IsInMenuReach(manager, left, top, bottom) ) then
+        -- Measured from where the menu is now (dropped over the open menu:
+        -- right next to it).
+        CompactRaidFrameManager_ResizeFrame_AnchorToMenu(manager, max(0, left - manager:GetRight()), top);
+    end
+end
+
 function CompactRaidFrameManager_ResizeFrame_Reanchor(manager)
     manager.container:SetPoint("TOPLEFT", manager.containerResizeFrame, "TOPLEFT", RESIZE_HORIZONTAL_OUTSETS, -RESIZE_VERTICAL_OUTSETS);
 end
 
 function CompactRaidFrameManager_ResizeFrame_OnDragStart(manager)
     manager.dynamicContainerPosition = false;
+    manager.containerMenuOffset = nil;     -- moving: placed anew on drop
 
     manager.containerResizeFrame:StartMoving();
 end
@@ -881,6 +977,7 @@ end
 function CompactRaidFrameManager_ResizeFrame_OnDragStop(manager)
     manager.containerResizeFrame:StopMovingOrSizing();
     CompactRaidFrameManager_ResizeFrame_CheckMagnetism(manager);
+    CompactRaidFrameManager_ResizeFrame_KeepClearOfMenu(manager);
     CompactRaidFrameManager_ResizeFrame_SavePosition(manager);
 end
 
@@ -893,10 +990,16 @@ function CompactRaidFrameManager_ResizeFrame_OnResizeStart(manager)
 end
 
 function CompactRaidFrameManager_ResizeFrame_OnResizeStop(manager)
-    manager.containerResizeFrame:StopMovingOrSizing();
-    manager.containerResizeFrame:SetScript("OnUpdate", nil);
+    local resizeFrame = manager.containerResizeFrame;
+    resizeFrame:StopMovingOrSizing();
+    resizeFrame:SetScript("OnUpdate", nil);
+    -- Sizing re-places the frame on the screen; keep following the menu.
+    if ( manager.containerMenuOffset ) then
+        CompactRaidFrameManager_ResizeFrame_AnchorToMenu(manager, manager.containerMenuOffset, resizeFrame:GetTop());
+    end
     CompactRaidFrameManager_ResizeFrame_UpdateContainerSize(manager);
     CompactRaidFrameManager_ResizeFrame_CheckMagnetism(manager);
+    CompactRaidFrameManager_ResizeFrame_KeepClearOfMenu(manager);
     CompactRaidFrameManager_ResizeFrame_SavePosition(manager);
 end
 
@@ -933,8 +1036,7 @@ local MAGNETIC_FIELD_RANGE = 10;
 function CompactRaidFrameManager_ResizeFrame_CheckMagnetism(manager)
     if ( abs(manager.containerResizeFrame:GetLeft() - manager:GetRight()) < MAGNETIC_FIELD_RANGE and
         manager.containerResizeFrame:GetTop() > manager:GetBottom() and manager.containerResizeFrame:GetBottom() < manager:GetTop() ) then
-        manager.containerResizeFrame:ClearAllPoints();
-        manager.containerResizeFrame:SetPoint("TOPLEFT", manager, "TOPRIGHT", 0, manager.containerResizeFrame:GetTop() - manager:GetTop());
+        CompactRaidFrameManager_ResizeFrame_AnchorToMenu(manager, 0, manager.containerResizeFrame:GetTop());
     end
 end
 
@@ -968,13 +1070,18 @@ function CompactRaidFrameManager_ResizeFrame_SavePosition(manager)
         bottomOffset = bottom;
     end
 
-    local isAttached = (select(2, manager.containerResizeFrame:GetPoint(1)) == manager);
-    if ( isAttached ) then
+    local menuOffset = manager.containerMenuOffset;
+    if ( menuOffset and menuOffset < 1 ) then
         leftPoint = "ATTACHED";
         leftOffset = 0;
     else
         local screenWidth = GetScreenWidth();
         local left = manager.containerResizeFrame:GetLeft();
+        if ( menuOffset ) then
+            -- Following the menu: save where it is while the menu is closed
+            -- (LoadPosition makes it follow again).
+            left = CompactRaidFrameManager_GetCollapsedRight(manager) + menuOffset;
+        end
         if ( left > screenWidth / 2 ) then
             leftPoint = "RIGHT";
             leftOffset = screenWidth - left;
@@ -1021,7 +1128,7 @@ function CompactRaidFrameManager_ResizeFrame_LoadPosition(manager)
     manager.containerResizeFrame:SetHeight(height);
 
     if ( leftPoint == "ATTACHED" ) then
-        manager.containerResizeFrame:SetPoint("TOPLEFT", manager, "TOPRIGHT", 0, top - manager:GetTop());
+        CompactRaidFrameManager_ResizeFrame_AnchorToMenu(manager, 0, top);
     else
         local left;
         if ( leftPoint == "RIGHT" ) then
@@ -1030,7 +1137,13 @@ function CompactRaidFrameManager_ResizeFrame_LoadPosition(manager)
             left = leftOffset;
         end
 
-        manager.containerResizeFrame:SetPoint("TOPLEFT", nil, "BOTTOMLEFT", left, top);
+        -- left is where the frames sit while the menu is closed.
+        if ( CompactRaidFrameManager_ResizeFrame_IsInMenuReach(manager, left, top, top - height) ) then
+            CompactRaidFrameManager_ResizeFrame_AnchorToMenu(manager, max(0, left - CompactRaidFrameManager_GetCollapsedRight(manager)), top);
+        else
+            manager.containerResizeFrame:SetPoint("TOPLEFT", nil, "BOTTOMLEFT", left, top);
+            manager.containerMenuOffset = nil;
+        end
     end
 
     CompactRaidFrameManager_ResizeFrame_UpdateContainerSize(manager);

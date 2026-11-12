@@ -3,6 +3,39 @@
 ..\..\FrameXML\UI.xsd">
   <Script file="CompactRaidFrameManager.lua" />
 
+  <!-- Side bar frame size slider: name on the left and the percentage on the
+       right above a 169px bar (the width of the side bar's buttons). -->
+  <Slider name="CRF_SideBarSliderTemplate" inherits="CRF_HorizontalSliderTemplate" virtual="true">
+    <Size x="169" y="17" />
+    <Layers>
+      <Layer level="ARTWORK">
+        <FontString name="$parentLabel" inherits="GameFontHighlightSmall" justifyH="LEFT" parentKey="label">
+          <Anchors>
+            <Anchor point="BOTTOMLEFT" relativePoint="TOPLEFT">
+              <Offset>
+                <AbsDimension x="3" y="-1" />
+              </Offset>
+            </Anchor>
+          </Anchors>
+        </FontString>
+        <FontString name="$parentValue" inherits="GameFontNormalSmall" justifyH="RIGHT" parentKey="valueLabel">
+          <Anchors>
+            <Anchor point="BOTTOMRIGHT" relativePoint="TOPRIGHT">
+              <Offset>
+                <AbsDimension x="-3" y="-1" />
+              </Offset>
+            </Anchor>
+          </Anchors>
+        </FontString>
+      </Layer>
+    </Layers>
+    <Scripts>
+      <OnValueChanged>
+        CompactRaidFrameManagerFrameSizeSlider_OnValueChanged(self, value);
+      </OnValueChanged>
+    </Scripts>
+  </Slider>
+
   <Button name="CRFManagerFilterButtonTemplate" inherits="CRF_UIMenuButtonStretchTemplate" virtual="true">
     <Layers>
       <Layer level="OVERLAY">
@@ -366,6 +399,31 @@
             <Scripts>
               <OnShow function="CompactRaidFrameManagerDisplayFrameGroupsSelector_SetUp" />
             </Scripts>
+          </Frame>
+          <!-- Frame height and width of the active profile (also on the
+               Raid Profiles panel's Layout tab). -->
+          <Frame name="$parentFrameSize" parentKey="frameSize" hidden="true">
+            <Size x="200" y="66" />
+            <Frames>
+              <Slider name="$parentHeight" inherits="CRF_SideBarSliderTemplate" parentKey="height">
+                <Anchors>
+                  <Anchor point="TOPLEFT">
+                    <Offset>
+                      <AbsDimension x="20" y="-14" />
+                    </Offset>
+                  </Anchor>
+                </Anchors>
+              </Slider>
+              <Slider name="$parentWidth" inherits="CRF_SideBarSliderTemplate" parentKey="width">
+                <Anchors>
+                  <Anchor point="TOPLEFT">
+                    <Offset>
+                      <AbsDimension x="20" y="-46" />
+                    </Offset>
+                  </Anchor>
+                </Anchors>
+              </Slider>
+            </Frames>
           </Frame>
           <Frame name="$parentPreviewSelector" inherits="UIDropDownMenuTemplate" parentKey="previewSelector">
             <Scripts>

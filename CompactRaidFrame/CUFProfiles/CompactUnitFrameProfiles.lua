@@ -634,11 +634,17 @@ end
 -- Groups Together + Horizontal Groups. Used by the Layout tab and the raid
 -- manager side bar.
 --------------------------------------------------------------
+-- text: the full name (dropdown lists); short: for the closed dropdowns, whose
+-- text is only width - 25 px wide (140px in the side bar).
 CRF_GROUP_LAYOUTS = {
-	{ key = "combineVertical",    keepGroupsTogether = false, horizontalGroups = false, text = "CRF_GROUPS_COMBINE_VERTICAL",    fallback = "Combine Groups (Vertical)" },
-	{ key = "combineHorizontal",  keepGroupsTogether = false, horizontalGroups = true,  text = "CRF_GROUPS_COMBINE_HORIZONTAL",  fallback = "Combine Groups (Horizontal)" },
-	{ key = "separateVertical",   keepGroupsTogether = true,  horizontalGroups = false, text = "CRF_GROUPS_SEPARATE_VERTICAL",   fallback = "Separate Groups (Vertical)" },
-	{ key = "separateHorizontal", keepGroupsTogether = true,  horizontalGroups = true,  text = "CRF_GROUPS_SEPARATE_HORIZONTAL", fallback = "Separate Groups (Horizontal)" },
+	{ key = "combineVertical",    keepGroupsTogether = false, horizontalGroups = false,
+	  text = "CRF_GROUPS_COMBINE_VERTICAL",    fallback = "Combine Groups (Vertical)",    short = "CRF_GROUPS_SHORT_COMBINE_VERTICAL",    shortFallback = "Combine (Vertical)" },
+	{ key = "combineHorizontal",  keepGroupsTogether = false, horizontalGroups = true,
+	  text = "CRF_GROUPS_COMBINE_HORIZONTAL",  fallback = "Combine Groups (Horizontal)",  short = "CRF_GROUPS_SHORT_COMBINE_HORIZONTAL",  shortFallback = "Combine (Horizontal)" },
+	{ key = "separateVertical",   keepGroupsTogether = true,  horizontalGroups = false,
+	  text = "CRF_GROUPS_SEPARATE_VERTICAL",   fallback = "Separate Groups (Vertical)",   short = "CRF_GROUPS_SHORT_SEPARATE_VERTICAL",   shortFallback = "Separate (Vertical)" },
+	{ key = "separateHorizontal", keepGroupsTogether = true,  horizontalGroups = true,
+	  text = "CRF_GROUPS_SEPARATE_HORIZONTAL", fallback = "Separate Groups (Horizontal)", short = "CRF_GROUPS_SHORT_SEPARATE_HORIZONTAL", shortFallback = "Separate (Horizontal)" },
 };
 
 function CRF_GetGroupLayout(profile)
@@ -654,9 +660,12 @@ function CRF_GetGroupLayout(profile)
 	end
 end
 
-function CRF_GetGroupLayoutText(layout)
+function CRF_GetGroupLayoutText(layout, short)
 	if ( not layout ) then
 		return "";
+	end
+	if ( short ) then
+		return _G[layout.short] or layout.shortFallback;
 	end
 	return _G[layout.text] or layout.fallback;
 end
@@ -891,7 +900,7 @@ local function CreateLayoutPage(options, page)
 		end,
 		function(self)
 			local layout = CRF_GetGroupLayout(CompactUnitFrameProfiles.selectedProfile);
-			C_UIDropDownMenu_SetText(self, CRF_GetGroupLayoutText(layout));
+			C_UIDropDownMenu_SetText(self, CRF_GetGroupLayoutText(layout, true));
 			-- Sort By only applies when groups are combined.
 			if ( layout and not layout.keepGroupsTogether ) then
 				self.sortBy:Show();
