@@ -76,7 +76,8 @@ function CompactUnitFrame_OnEvent(self, event, ...)
                 CompactUnitFrame_SetHealthDirty(self);
                 CompactUnitFrame_UpdateStatusText(self);
                 CompactUnitFrame_SetHealPredictionDirty(self);
-            elseif ( event == "UNIT_MAXMANA" ) then
+                CompactUnitFrame_UpdatePowerText(self);     -- hidden while dead
+            elseif ( event == "UNIT_MAXMANA" or event == "UNIT_MAXRAGE" or event == "UNIT_MAXENERGY" or event == "UNIT_MAXRUNIC_POWER" ) then
                 CompactUnitFrame_UpdateMaxPower(self);
                 CompactUnitFrame_UpdatePower(self);
             elseif ( event == "UNIT_RAGE" or event == "UNIT_MANA" or event == "UNIT_RUNIC_POWER" or event == "UNIT_ENERGY" ) then
@@ -291,6 +292,9 @@ function CompactUnitFrame_UpdateUnitEvents(frame)
     frame:RegisterEvent("UNIT_MAXHEALTH");
     frame:RegisterEvent("UNIT_HEALTH");
     frame:RegisterEvent("UNIT_MAXMANA");
+    frame:RegisterEvent("UNIT_MAXRAGE");
+    frame:RegisterEvent("UNIT_MAXENERGY");
+    frame:RegisterEvent("UNIT_MAXRUNIC_POWER");
     frame:RegisterEvent("UNIT_RAGE");
     frame:RegisterEvent("UNIT_MANA");
     frame:RegisterEvent("UNIT_ENERGY");
@@ -554,6 +558,35 @@ function CompactUnitFrame_UpdatePower(frame)
 
         frame.powerBar:SetValue(power);
     end
+    CompactUnitFrame_UpdatePowerText(frame);
+end
+
+-- "Display Power Bar Text": the power left, or as a percentage of the maximum.
+-- Hidden for dead or offline players (the health text says so) and units
+-- without power. Lives on the power bar, so it hides with it.
+function CompactUnitFrame_UpdatePowerText(frame)
+    local powerText = frame.powerText;
+    if ( not powerText ) then
+        return;
+    end
+    local mode = frame.optionTable and frame.optionTable.powerText;
+    if ( not mode or mode == "none" or not UnitIsConnected(frame.unit) or UnitIsDeadOrGhost(frame.displayedUnit) ) then
+        powerText:Hide();
+        return;
+    end
+    local powerID = CompactUnitFrame_GetDisplayedPowerID(frame);
+    local maxPower = UnitPowerMax(frame.displayedUnit, powerID);
+    if ( not maxPower or maxPower <= 0 ) then
+        powerText:Hide();
+        return;
+    end
+    local power = UnitPower(frame.displayedUnit, powerID);
+    if ( mode == "perc" ) then
+        powerText:SetFormattedText("%d%%", math.ceil(100 * power / maxPower));
+    else
+        powerText:SetText(power);
+    end
+    powerText:Show();
 end
 
 function CompactUnitFrame_UpdatePowerColor(frame)
@@ -1459,6 +1492,7 @@ DefaultCompactUnitFrameOptions = {
     displayOnlyDispellableDebuffs = false,
     displayNonBossDebuffs = true,
     healthText = "none",
+    powerText = "none",
     displayIncomingResurrect = true,
     displayInOtherGroup = false,
     displayInOtherPhase = false,
@@ -1473,12 +1507,24 @@ local NATIVE_UNIT_FRAME_HEIGHT = 36;
 local NATIVE_UNIT_FRAME_WIDTH = 72;
 DefaultCompactUnitFrameSetupOptions = {
     displayPowerBar = true,
+    powerText = "none",
     height = NATIVE_UNIT_FRAME_HEIGHT,
     width = NATIVE_UNIT_FRAME_WIDTH,
     displayBorder = true,
 }
 
 local POWER_BAR_HEIGHT = 8;
+local POWER_BAR_TEXT_HEIGHT = 16;    -- twice as tall while it shows "Display Power Bar Text"
+
+local function CompactUnitFrame_GetPowerBarHeight(options, displayPowerBar)
+    if ( not displayPowerBar ) then
+        return 0;
+    end
+    if ( options.powerText and options.powerText ~= "none" ) then
+        return POWER_BAR_TEXT_HEIGHT;
+    end
+    return POWER_BAR_HEIGHT;
+end
 
 -- Whether this frame shows a power bar: never, always, or - with "Display Only
 -- Healer Power Bars" - only while its unit is in a healer role.
@@ -1496,10 +1542,18 @@ end
 -- Only plain child frames and textures are touched (never the secure unit
 -- button itself), so unlike the full setup this may run in combat.
 local function CompactUnitFrame_LayoutPowerBar(frame, options, displayPowerBar)
-    local powerBarUsedHeight = displayPowerBar and POWER_BAR_HEIGHT or 0;
+    local powerBarUsedHeight = CompactUnitFrame_GetPowerBarHeight(options, displayPowerBar);
     frame.powerBarDisplayed = displayPowerBar;
 
     frame.healthBar:SetPoint("BOTTOMRIGHT", frame, "BOTTOMRIGHT", -1, 1 + powerBarUsedHeight);
+
+    -- The health text sits a third of the way up; on short frames keep it
+    -- above a tall (text) power bar. Unchanged with the normal 8px bar.
+    if ( frame.statusText ) then
+        local statusTextOffset = max(options.height / 3 - 2, powerBarUsedHeight + 2);
+        frame.statusText:SetPoint("BOTTOMLEFT", frame, "BOTTOMLEFT", 3, statusTextOffset);
+        frame.statusText:SetPoint("BOTTOMRIGHT", frame, "BOTTOMRIGHT", -3, statusTextOffset);
+    end
 
     if ( frame.powerBar ) then
         if ( displayPowerBar ) then
@@ -1529,7 +1583,8 @@ local function CompactUnitFrame_LayoutPowerBar(frame, options, displayPowerBar)
         frame.debuffFrames[1]:SetPoint("BOTTOMLEFT", frame, "BOTTOMLEFT", 3, auraOffset);
     end
     for i=1, #frame.debuffFrames do
-        frame.debuffFrames[i].maxHeight = options.height - powerBarUsedHeight - CUF_AURA_BOTTOM_OFFSET - CUF_NAME_SECTION_SIZE;
+        frame.debuffFrames[i].maxHeight = max(options.height - powerBarUsedHeight - CUF_AURA_BOTTOM_OFFSET - CUF_NAME_SECTION_SIZE,
+            frame.debuffFrames[i].baseSize or 0);
     end
 
     if ( options.displayBorder and displayPowerBar ) then
@@ -1567,7 +1622,7 @@ function DefaultCompactUnitFrameSetup(frame)
     frame.overlay:SetParent(frame.healthBar);
 
     local displayPowerBar = CompactUnitFrame_GetOptionDisplayPowerBar(frame, options);
-    local powerBarUsedHeight = displayPowerBar and POWER_BAR_HEIGHT or 0;
+    local powerBarUsedHeight = CompactUnitFrame_GetPowerBarHeight(options, displayPowerBar);
 
     frame.myHealPrediction = frame.overlay.myHealPrediction;
     frame.otherHealPrediction = frame.overlay.otherHealPrediction;
@@ -1633,6 +1688,18 @@ function DefaultCompactUnitFrameSetup(frame)
     frame.statusText:SetPoint("BOTTOMLEFT", frame, "BOTTOMLEFT", 3, options.height / 3 - 2);
     frame.statusText:SetPoint("BOTTOMRIGHT", frame, "BOTTOMRIGHT", -3, options.height / 3 - 2);
     frame.statusText:SetHeight(12 * componentScale);
+
+    -- "Display Power Bar Text": centred in the (16px) power bar.
+    frame.powerText = frame.powerBar and frame.powerBar.powerText;
+    if ( frame.powerText ) then
+        local NATIVE_POWER_FONT_SIZE = 10;
+        local powerFontName, powerFontSize, powerFontFlags = frame.powerText:GetFont();
+        frame.powerText:SetFont(powerFontName, min(NATIVE_POWER_FONT_SIZE * componentScale, 12), powerFontFlags);
+        frame.powerText:ClearAllPoints();
+        frame.powerText:SetPoint("LEFT", frame.powerBar, "LEFT", 2, 0);
+        frame.powerText:SetPoint("RIGHT", frame.powerBar, "RIGHT", -2, 0);
+        frame.powerText:SetJustifyH("CENTER");
+    end
 
     local readyCheckSize = 15 * componentScale;
     frame.ignoreParentAlpha.readyCheckIcon:ClearAllPoints();

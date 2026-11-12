@@ -473,18 +473,19 @@ end
 
 function CompactUnitFrameProfilesDropdown_OnShow(self)
 	C_UIDropDownMenu_SetWidth(self, self.width or 160);
-	CompactUnitFrameProfilesDropdown_Update(self);
+	(self.updateFunc or CompactUnitFrameProfilesDropdown_Update)(self);
 end
 
 function CompactUnitFrameProfilesDropdown_Update(self)
 	C_UIDropDownMenu_Initialize(self, CompactUnitFrameProfilesDropdown_Initialize);
-	C_UIDropDownMenu_SetSelectedValue(self, GetRaidProfileOption(CompactUnitFrameProfiles.selectedProfile, self.optionName));
+	C_UIDropDownMenu_SetSelectedValue(self, GetRaidProfileOption(CompactUnitFrameProfiles.selectedProfile, self.optionName) or self.defaultValue);
 end
 
 function CompactUnitFrameProfilesDropdown_Initialize(dropDown)
 	local info = C_UIDropDownMenu_CreateInfo();
 
-	local currentValue = GetRaidProfileOption(CompactUnitFrameProfiles.selectedProfile, dropDown.optionName);
+	-- .defaultValue: what a profile saved before the option existed (no value) means
+	local currentValue = GetRaidProfileOption(CompactUnitFrameProfiles.selectedProfile, dropDown.optionName) or dropDown.defaultValue;
 	for i=1, #dropDown.options do
 		local id = dropDown.options[i];
 		local tag = format("COMPACT_UNIT_FRAME_PROFILE_%s_%s", strupper(dropDown.optionName), strupper(id));
@@ -917,10 +918,10 @@ local function CreateLayoutPage(options, page)
 	local border = CreateProfileCheckButton(page, "DisplayBorder", "displayBorder");
 	border:SetPoint("TOPLEFT", groups, "BOTTOMLEFT", -DROPDOWN_OFFSET_X, -4);
 
-	local heightSlider = CreateProfileSlider(page, "HeightSlider", "frameHeight", 36, 96, 2, SHORT, TALL);
+	local heightSlider = CreateProfileSlider(page, "HeightSlider", "frameHeight", 36, 96, 1, SHORT, TALL);
 	heightSlider:SetPoint("TOPLEFT", border, "BOTTOMLEFT", 14, -24);
 
-	local widthSlider = CreateProfileSlider(page, "WidthSlider", "frameWidth", 72, 186, 2, NARROW, WIDE);
+	local widthSlider = CreateProfileSlider(page, "WidthSlider", "frameWidth", 72, 186, 1, NARROW, WIDE);
 	widthSlider:SetPoint("LEFT", heightSlider, "RIGHT", 44, 0);
 
 	-- Raid size preview (not part of the profile; ends when combat starts).
@@ -983,6 +984,35 @@ local function CreateDisplayPage(options, page)
 
 	local healthText = CreateProfileDropdown(page, "HealthTextDropdown", "healthText", { "none", "health", "losthealth", "perc" });
 	healthText:SetPoint("TOPLEFT", showDebuffs, "BOTTOMLEFT", DROPDOWN_OFFSET_X, -46);
+	healthText.defaultValue = "none";
+
+	-- Text on the power bar; greyed out (with the reason) without power bars.
+	local powerText = CreateProfileDropdown(page, "PowerTextDropdown", "powerText", { "none", "power", "perc" });
+	powerText:SetPoint("TOPLEFT", healthText, "BOTTOMLEFT", 0, -18);
+	powerText.defaultValue = "none";
+	powerText.disabledTooltip = CRF_REQUIRES_POWER_BARS;
+	powerText.updateFunc = function(self)
+		CompactUnitFrameProfilesDropdown_Update(self);
+		self.needsPowerBars = not GetRaidProfileOption(CompactUnitFrameProfiles.selectedProfile, "displayPowerBar");
+		if ( self.needsPowerBars ) then
+			C_UIDropDownMenu_DisableDropDown(self);
+		else
+			C_UIDropDownMenu_EnableDropDown(self);
+		end
+	end;
+	local powerTextButton = _G[powerText:GetName().."Button"];
+	if ( powerTextButton.SetMotionScriptsWhileDisabled ) then
+		powerTextButton:SetMotionScriptsWhileDisabled(true);
+	end
+	powerTextButton:HookScript("OnEnter", function(self)
+		local dropdown = self:GetParent();
+		if ( dropdown.needsPowerBars and dropdown.disabledTooltip ) then
+			GameTooltip:SetOwner(self, "ANCHOR_RIGHT");
+			GameTooltip:SetText(dropdown.disabledTooltip, nil, nil, nil, nil, true);
+			GameTooltip:Show();
+		end
+	end);
+	powerTextButton:HookScript("OnLeave", GameTooltip_Hide);
 end
 
 -- Auto-Activate: which group sizes / content switch to this profile.
@@ -1185,6 +1215,11 @@ CUFProfileActionTable = {
 	useClassColors = CompactUnitFrameProfiles_GenerateOptionSetter("useClassColors", "normal"),
 	horizontalGroups = CompactUnitFrameProfiles_GenerateRaidManagerSetting("HorizontalGroups");
 	healthText = CompactUnitFrameProfiles_GenerateOptionSetter("healthText", "normal"),
+	powerText = function(value)
+								-- the text (frame option) and the taller power bar (setup option)
+								DefaultCompactUnitFrameOptions.powerText = value;
+								DefaultCompactUnitFrameSetupOptions.powerText = value;
+							end,
 	frameWidth = CompactUnitFrameProfiles_GenerateSetUpOptionSetter("width", "all");
 	frameHeight = 	function(value)
 								DefaultCompactUnitFrameSetupOptions.height = value;

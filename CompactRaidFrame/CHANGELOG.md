@@ -1,5 +1,29 @@
 # Compact Raid Frames (3.3.5a) - changelog
 
+## 1.22
+
+### New option
+- Display tab: **Display Power Bar Text** (None / Power Remaining / Power
+  Percentage), under Display Health Text. While it shows text the power bar is
+  twice as tall (16px instead of 8px). It is greyed out until Display Power Bars
+  is ticked, and the text is hidden for dead or offline players. On short
+  frames the health text moves up so it stays clear of the taller bar.
+  Existing profiles start with None.
+
+### New profile defaults
+- Frame Height and Frame Width 50% (66 x 129), Display Border off, and
+  Auto-Activate on for 10, 15, 25 and 40 player groups, PvP and PvE.
+- These apply to new profiles and to the panel's Defaults button (which
+  replaces all profiles with one default profile). Existing profiles keep
+  their settings.
+
+### Fixes
+- Frame Width could not be set to 50%: the sliders moved in 2px steps (128 =
+  49%, 130 = 51%). Both size sliders, on the Layout tab and in the side bar,
+  now move in 1px steps, so every width percentage can be picked.
+- The power bar's maximum now also updates when a rage, energy or runic power
+  maximum changes (only mana did), so the bar and its percentage stay right.
+
 ## 1.21
 
 - Separate Groups: the "Party" title is only shown when you are in a party.

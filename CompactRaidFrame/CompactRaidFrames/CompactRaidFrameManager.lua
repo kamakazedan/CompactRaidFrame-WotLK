@@ -322,12 +322,13 @@ end
 -- Frame height / width: the active profile's size, applied and saved at once
 -- (like the Groups dropdown). The number is the slider's position in its
 -- range, as on the options panel's Layout tab.
-function CompactRaidFrameManager_SetUpFrameSizeSlider(slider, optionName, minValue, maxValue)
+-- step 1: every percentage can be picked (e.g. 50% width = 129px).
+function CompactRaidFrameManager_SetUpFrameSizeSlider(slider, optionName, minValue, maxValue, step)
     slider.optionName = optionName;
     slider.label:SetText(_G["COMPACT_UNIT_FRAME_PROFILE_"..strupper(optionName)]);
     CompactUnitFrameProfilesSlider_SetTrack(slider);
     slider:SetMinMaxValues(minValue, maxValue);
-    slider:SetValueStep(2);
+    slider:SetValueStep(step or 1);
     CompactRaidFrameManager_UpdateFrameSizeSlider(slider);
 end
 

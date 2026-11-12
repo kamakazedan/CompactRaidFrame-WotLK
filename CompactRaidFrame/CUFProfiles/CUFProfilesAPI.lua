@@ -10,16 +10,25 @@ local DEFAULT_PROFILE = {
 	sortBy = "group",
 	displayAggroHighlight = true,
 	displayMainTankAndAssist = true,
-	displayBorder = true,
+	-- displayBorder: off (a missing key is "off")
 	displayNonBossDebuffs = true,
 	displayHealPrediction = true,
 	healthText = "none",
-	frameWidth = 72,
-	frameHeight = 36,
+	powerText = "none",
+	-- 50% on the Frame Width / Frame Height sliders (72-186, 36-96)
+	frameWidth = 129,
+	frameHeight = 66,
+	-- Auto-activate in raids (10/15/25/40 players), PvE and PvP; not in parties.
+	autoActivate10Players = true,
+	autoActivate15Players = true,
+	autoActivate25Players = true,
+	autoActivate40Players = true,
+	autoActivatePvP = true,
+	autoActivatePvE = true,
 };
 
 -- Bumped when stored profiles need a one-time update (see ADDON_LOADED below).
-local OPTIONS_VERSION = 2;
+local OPTIONS_VERSION = 3;
 
 local ALL_OPTIONS = {
 	shown = 0,
@@ -38,6 +47,7 @@ local ALL_OPTIONS = {
 	displayNonBossDebuffs = 1,
 	displayOnlyDispellableDebuffs = 1,
 	healthText = 1,
+	powerText = 1,
 	frameWidth = 1,
 	frameHeight = 1,
 	autoActivate2Players = 1,
@@ -99,6 +109,12 @@ ProfileAPI:SetScript("OnEvent", function(self, event, addon)
 			-- 1.19: "Display Incoming Heals" (heal prediction was always shown).
 			for i=1,#DB do
 				DB[i].displayHealPrediction = true;
+			end
+		end
+		if ( (DB.crfOptionsVersion or 1) < 3 ) then
+			-- 1.22: "Display Power Bar Text" (no text before).
+			for i=1,#DB do
+				DB[i].powerText = DB[i].powerText or "none";
 			end
 		end
 		DB.crfOptionsVersion = OPTIONS_VERSION;

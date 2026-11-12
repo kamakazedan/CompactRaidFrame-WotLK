@@ -169,6 +169,9 @@
           <Layer level="BACKGROUND">
             <Texture name="$parentBackground" parentKey="background" setAllPoints="true" />
           </Layer>
+          <Layer level="OVERLAY">
+            <FontString name="$parentText" inherits="GameFontHighlightSmall" parentKey="powerText" hidden="true" />
+          </Layer>
         </Layers>
       </StatusBar>
       <Button name="$parentBuff1" inherits="CompactBuffTemplate" />
