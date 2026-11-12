@@ -15,6 +15,11 @@ local PARTY_FRAME_DISABLED
 local PARTY_FRAME_DISPLAY = "party"
 
 function GetDisplayedAllyFrames()
+	-- The raid size preview shows the raid frames wherever you are.
+	if ( CRF_GetRaidPreviewSize and CRF_GetRaidPreviewSize() ) then
+		return "raid"
+	end
+
 	local UseCompact = CUF_CVar:GetCVarBool("useCompactPartyFrames")
 	local _, InstanceType = GetInstanceInfo()
 
@@ -81,6 +86,11 @@ function RaidOptionsFrame_UpdatePartyFrames()
 
 				PartyMemberFrame_OnLoad(PartyFrame)
 				PartyFrame:SetAlpha(1)
+				-- Show it now if the member exists; the re-registered events
+				-- alone left it hidden until the next party change.
+				if ( PartyMemberFrame_UpdateMember ) then
+					PartyMemberFrame_UpdateMember(PartyFrame)
+				end
 			end
 		end
 

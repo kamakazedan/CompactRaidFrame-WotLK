@@ -360,6 +360,18 @@
               <OnShow function="CompactRaidFrameManagerDisplayFrameProfileSelector_SetUp" />
             </Scripts>
           </Frame>
+          <!-- Groups layout of the active profile, and the raid size preview
+               (both also on the Raid Profiles panel's Layout tab). -->
+          <Frame name="$parentGroupsSelector" inherits="UIDropDownMenuTemplate" parentKey="groupsSelector">
+            <Scripts>
+              <OnShow function="CompactRaidFrameManagerDisplayFrameGroupsSelector_SetUp" />
+            </Scripts>
+          </Frame>
+          <Frame name="$parentPreviewSelector" inherits="UIDropDownMenuTemplate" parentKey="previewSelector">
+            <Scripts>
+              <OnShow function="CompactRaidFrameManagerDisplayFramePreviewSelector_SetUp" />
+            </Scripts>
+          </Frame>
           <Frame name="$parentFilterOptions" parentKey="filterOptions">
             <Size x="200" y="85" />
             <Layers>

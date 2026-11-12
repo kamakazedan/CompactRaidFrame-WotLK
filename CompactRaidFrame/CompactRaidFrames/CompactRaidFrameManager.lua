@@ -10,6 +10,7 @@ local RESIZE_VERTICAL_OUTSETS = 7;
 local UnitGroupRolesAssigned = C_UnitGroupRolesAssigned;
 local PLAYER_REGEN_ENABLED_AWAIT;   -- secure manager update postponed by combat
 local BOUNDS_UPDATE_AWAIT;          -- screen size/scale change postponed by combat
+local PLAYER_FRAME_UPDATE_AWAIT;    -- player frame visibility rule postponed by combat
 
 local function  CompactRaidFrameManager_Toggle_OnLoad(self)
     local toggleButton = self.toggleButton;
@@ -165,6 +166,8 @@ function CompactRaidFrameManager_OnLoad(self)
     CompactRaidFrameManager_TabFade_OnLoad(self);
 
     self.displayFrame.resetPosition:SetText(RESET_POSITION or "Reset Position");
+    C_UIDropDownMenu_SetWidth(self.displayFrame.groupsSelector, 165);
+    C_UIDropDownMenu_SetWidth(self.displayFrame.previewSelector, 165);
 
     --Set up the options flow container
     FlowContainer_Initialize(self.displayFrame.optionsFlowContainer);
@@ -181,6 +184,9 @@ function CompactRaidFrameManager_OnEvent(self, event, ...)
         end
         if ( PLAYER_REGEN_ENABLED_AWAIT ) then
             CompactRaidFrameManager_UpdateAll(self);
+        end
+        if ( PLAYER_FRAME_UPDATE_AWAIT ) then
+            CRF_UpdatePlayerFrameVisibility();
         end
     elseif ( event == "RAID_TARGET_UPDATE" or event == "PLAYER_TARGET_CHANGED" ) then
         CompactRaidFrameManager_UpdateRaidIcons();
@@ -222,6 +228,7 @@ function CompactRaidFrameManager_UpdateAll(self)
     CompactRaidFrameManager_UpdateLabel(self);
     CompactRaidFrameManager_UpdateContainerLockVisibility(self);
     CompactRaidFrameManager_UpdateRaidIcons();
+    CRF_UpdatePlayerFrameVisibility();
     return true;
 end
 
@@ -250,6 +257,138 @@ function CompactRaidFrameManagerDisplayFrameProfileSelector_OnClick(self)
     CompactUnitFrameProfiles_ActivateRaidProfile(profile);
 end
 
+-- Groups: the active profile's group layout. Unlike the options panel this
+-- applies and saves at once (other unsaved panel edits stay unsaved).
+function CompactRaidFrameManagerDisplayFrameGroupsSelector_SetUp(self)
+    C_UIDropDownMenu_SetWidth(self, 165);
+    C_UIDropDownMenu_Initialize(self, CompactRaidFrameManagerDisplayFrameGroupsSelector_Initialize);
+    C_UIDropDownMenu_SetText(self, CRF_GetGroupLayoutText(CRF_GetGroupLayout(GetActiveRaidProfile())));
+end
+
+function CompactRaidFrameManagerDisplayFrameGroupsSelector_Initialize()
+    local current = CRF_GetGroupLayout(GetActiveRaidProfile());
+    for _, layout in ipairs(CRF_GROUP_LAYOUTS) do
+        local info = C_UIDropDownMenu_CreateInfo();
+        info.text = CRF_GetGroupLayoutText(layout);
+        info.value = layout.key;
+        info.arg1 = layout;
+        info.func = CompactRaidFrameManagerDisplayFrameGroupsSelector_OnClick;
+        info.checked = (layout == current);
+        info.disabled = InCombatLockdown();
+        C_UIDropDownMenu_AddButton(info);
+    end
+end
+
+function CompactRaidFrameManagerDisplayFrameGroupsSelector_OnClick(button, layout)
+    if ( InCombatLockdown() ) then
+        DEFAULT_CHAT_FRAME:AddMessage(COMPACT_UNIT_FRAME_ERRCOMBAT);
+        return;
+    end
+    CRF_SetGroupLayout(GetActiveRaidProfile(), layout, true);
+end
+
+-- Raid size preview (CRF_SetRaidPreviewSize, CompactRaidFrameContainer.lua).
+function CompactRaidFrameManagerDisplayFramePreviewSelector_SetUp(self)
+    C_UIDropDownMenu_SetWidth(self, 165);
+    C_UIDropDownMenu_Initialize(self, CompactRaidFrameManagerDisplayFramePreviewSelector_Initialize);
+    C_UIDropDownMenu_SetText(self, CRF_GetRaidPreviewLabel(CRF_GetRaidPreviewSize()));
+end
+
+function CompactRaidFrameManagerDisplayFramePreviewSelector_Initialize()
+    CRF_AddRaidPreviewMenuButtons(CompactRaidFrameManagerDisplayFramePreviewSelector_OnClick);
+end
+
+function CompactRaidFrameManagerDisplayFramePreviewSelector_OnClick(button, size)
+    CRF_SetRaidPreviewSize(size);
+end
+
+-- Keeps the side bar's Groups / preview text current (profile switches,
+-- changes made in the options panel, preview on/off).
+function CompactRaidFrameManager_UpdateLayoutSelectors()
+    local displayFrame = CompactRaidFrameManager.displayFrame;
+    C_UIDropDownMenu_SetText(displayFrame.groupsSelector, CRF_GetGroupLayoutText(CRF_GetGroupLayout(GetActiveRaidProfile())));
+    C_UIDropDownMenu_SetText(displayFrame.previewSelector, CRF_GetRaidPreviewLabel(CRF_GetRaidPreviewSize()));
+end
+
+--------------------------------------------------------------------------
+-- "Hide player frame when raid frames are shown" (CRF_IsHidePlayerFrameEnabled).
+-- A secure visibility driver on PlayerFrame, so it follows joining and leaving
+-- groups even in combat. Its condition mirrors GetDisplayedAllyFrames (which
+-- frames are in use), rebuilt whenever the settings behind it change.
+--------------------------------------------------------------------------
+local playerFrameDriven;    -- our driver is registered on PlayerFrame
+
+local function CompactRaidFrameManager_GetPlayerFrameCondition()
+    if ( not CRF_IsHidePlayerFrameEnabled() ) then
+        return nil;
+    end
+    if ( not CompactRaidFrameManager.container.enabled ) then
+        return nil;     -- raid frames hidden with the manager's Hide button
+    end
+    -- In a vehicle the player frame shows the vehicle, which the raid frames don't.
+    if ( CRF_GetRaidPreviewSize() ) then
+        return "[vehicleui]show;hide";
+    end
+    local party = CUF_CVar:GetCVarBool("useCompactPartyFrames") and "hide" or "show";
+    local solo = CRF_IsAlwaysEnabled() and "hide" or "show";
+    return "[vehicleui]show;[target=raid1,exists]hide;[target=party1,exists]"..party..";"..solo;
+end
+
+function CRF_UpdatePlayerFrameVisibility()
+    if ( not PlayerFrame ) then
+        return;
+    end
+    if ( InCombatLockdown() ) then
+        PLAYER_FRAME_UPDATE_AWAIT = true;
+        return;
+    end
+    PLAYER_FRAME_UPDATE_AWAIT = nil;
+
+    local condition = CompactRaidFrameManager_GetPlayerFrameCondition();
+    if ( condition ) then
+        RegisterStateDriver(PlayerFrame, "visibility", condition);
+        playerFrameDriven = true;
+    elseif ( playerFrameDriven ) then
+        -- Only undo our own hiding (another addon may hide it for good).
+        UnregisterStateDriver(PlayerFrame, "visibility");
+        PlayerFrame:Show();
+        playerFrameDriven = nil;
+    end
+end
+
+-- Totem timers and Death Knight runes are children of the player frame. While
+-- it is hidden for the raid frames they move to UIParent (same place on
+-- screen) and go back when it shows. Neither is a secure frame, so this also
+-- works when the player frame hides or shows in combat.
+local CLASS_BARS = { "TotemFrame", "RuneFrame" };
+local function CompactRaidFrameManager_KeepClassBars(playerFrameShown)
+    for _, name in ipairs(CLASS_BARS) do
+        local bar = _G[name];
+        if ( bar ) then
+            if ( playerFrameShown ) then
+                if ( bar.crfReparented ) then
+                    bar:SetParent(PlayerFrame);
+                    bar.crfReparented = nil;
+                end
+            elseif ( bar:GetParent() == PlayerFrame ) then
+                bar:SetParent(UIParent);
+                bar.crfReparented = true;
+            end
+        end
+    end
+end
+
+if ( PlayerFrame ) then
+    PlayerFrame:HookScript("OnHide", function()
+        if ( playerFrameDriven ) then
+            CompactRaidFrameManager_KeepClassBars(false);
+        end
+    end);
+    PlayerFrame:HookScript("OnShow", function()
+        CompactRaidFrameManager_KeepClassBars(true);
+    end);
+end
+
 function CompactRaidFrameManager_UpdateShown(self)
     if ( InCombatLockdown() ) then
         -- Show/Hide/SetHeight on the secure manager are blocked in combat.
@@ -272,7 +411,7 @@ function CompactRaidFrameManager_UpdateVisibilityDriver(self)
     if ( InCombatLockdown() ) then
         return false;
     end
-    if ( CRF_IsAlwaysEnabled() ) then
+    if ( CRF_IsAlwaysEnabled() or CRF_GetRaidPreviewSize() ) then
         RegisterStateDriver(self, "visibility", "show");
     else
         RegisterStateDriver(self, "visibility", "[target=raid1,exists][target=party1,exists]show;hide");
@@ -321,10 +460,22 @@ function CompactRaidFrameManager_UpdateOptionsFlowContainer(self)
     FlowContainer_PauseUpdates(container);
 
     if ( GetDisplayedAllyFrames() == "raid" ) then
+        -- One per row. (A dropdown is only 40px wide until its OnShow sets the
+        -- width, which can be after this layout, so they would share a row.)
         FlowContainer_AddObject(container, self.displayFrame.profileSelector);
+        FlowContainer_AddLineBreak(container);
+        FlowContainer_AddObject(container, self.displayFrame.groupsSelector);
+        FlowContainer_AddLineBreak(container);
+        FlowContainer_AddObject(container, self.displayFrame.previewSelector);
+        FlowContainer_AddLineBreak(container);
         self.displayFrame.profileSelector:Show();
+        self.displayFrame.groupsSelector:Show();
+        self.displayFrame.previewSelector:Show();
+        CompactRaidFrameManager_UpdateLayoutSelectors();
     else
         self.displayFrame.profileSelector:Hide();
+        self.displayFrame.groupsSelector:Hide();
+        self.displayFrame.previewSelector:Hide();
     end
 
     if ( IsInRaid() ) then
@@ -611,6 +762,7 @@ do  --Enclosure to make sure people go through SetSetting
             CompactRaidFrameManagerDisplayFrameHiddenModeToggle.shownMode = true;
         end
         CompactRaidFrameManager_UpdateContainerVisibility();
+        CRF_UpdatePlayerFrameVisibility();
     end
 
     local function CompactRaidFrameManager_SetBorderShown(value)

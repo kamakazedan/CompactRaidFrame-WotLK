@@ -119,6 +119,11 @@ local function RoleRefresh()
         CRF_ForEachCompactUnitFrame(function(f)
             if f.unit and f.optionTable then
                 CompactUnitFrame_UpdateRoleIcon(f)
+                -- "Display Only Healer Power Bars" follows the role too (also
+                -- combat-safe: it only re-anchors the frame's plain children).
+                if CompactUnitFrame_UpdatePowerBarDisplay then
+                    CompactUnitFrame_UpdatePowerBarDisplay(f)
+                end
             end
         end)
     end

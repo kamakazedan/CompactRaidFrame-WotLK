@@ -127,6 +127,7 @@ function CompactUnitFrame_OnEvent(self, event, ...)
                 CompactUnitFrame_UpdateCenterStatusIcon(self);
             elseif ( event == "PLAYER_ROLES_ASSIGNED" ) then
                 CompactUnitFrame_UpdateRoleIcon(self);
+                CompactUnitFrame_UpdatePowerBarDisplay(self);
             end
         end
         if ( unitMatches or arg1 == "player" ) then
@@ -368,6 +369,7 @@ function CompactUnitFrame_UpdateAll(frame)
         CompactUnitFrame_UpdateStatusText(frame);
         CompactUnitFrame_UpdateHealPrediction(frame);
         CompactUnitFrame_UpdateRoleIcon(frame);
+        CompactUnitFrame_UpdatePowerBarDisplay(frame);
         CompactUnitFrame_UpdateReadyCheck(frame);
         CompactUnitFrame_UpdateAuras(frame);
         CompactUnitFrame_UpdateCenterStatusIcon(frame);
@@ -1476,6 +1478,85 @@ DefaultCompactUnitFrameSetupOptions = {
     displayBorder = true,
 }
 
+local POWER_BAR_HEIGHT = 8;
+
+-- Whether this frame shows a power bar: never, always, or - with "Display Only
+-- Healer Power Bars" - only while its unit is in a healer role.
+function CompactUnitFrame_GetOptionDisplayPowerBar(frame, options)
+    if ( not options.displayPowerBar ) then
+        return false;
+    end
+    if ( options.displayOnlyHealerPowerBars ) then
+        return frame.unit ~= nil and UnitGroupRolesAssigned(frame.unit) == "HEALER";
+    end
+    return true;
+end
+
+-- The parts of the frame layout that depend on whether the power bar is shown.
+-- Only plain child frames and textures are touched (never the secure unit
+-- button itself), so unlike the full setup this may run in combat.
+local function CompactUnitFrame_LayoutPowerBar(frame, options, displayPowerBar)
+    local powerBarUsedHeight = displayPowerBar and POWER_BAR_HEIGHT or 0;
+    frame.powerBarDisplayed = displayPowerBar;
+
+    frame.healthBar:SetPoint("BOTTOMRIGHT", frame, "BOTTOMRIGHT", -1, 1 + powerBarUsedHeight);
+
+    if ( frame.powerBar ) then
+        if ( displayPowerBar ) then
+            if ( options.displayBorder ) then
+                frame.powerBar:SetPoint("TOPLEFT", frame.healthBar, "BOTTOMLEFT", 0, -2);
+            else
+                frame.powerBar:SetPoint("TOPLEFT", frame.healthBar, "BOTTOMLEFT", 0, 0);
+            end
+            frame.powerBar:SetPoint("BOTTOMRIGHT", frame, "BOTTOMRIGHT", -1, 1);
+            frame.powerBar:SetStatusBarTexture("Interface\\AddOns\\CompactRaidFrame\\Texture\\RaidFrame\\Raid-Bar-Resource-Fill", "BORDER");
+            frame.powerBar.background:SetTexture("Interface\\AddOns\\CompactRaidFrame\\Texture\\RaidFrame\\Raid-Bar-Resource-Background");
+            frame.powerBar:Show();
+            frame.powerBar:SetParent(frame.healthBar);
+        else
+            frame.powerBar:Hide();
+        end
+    end
+
+    -- Buffs and debuffs sit just above the power bar (or the bottom edge).
+    local auraOffset = CUF_AURA_BOTTOM_OFFSET + powerBarUsedHeight;
+    if ( frame.buffFrames[1] ) then
+        frame.buffFrames[1]:ClearAllPoints();
+        frame.buffFrames[1]:SetPoint("BOTTOMRIGHT", frame, "BOTTOMRIGHT", -3, auraOffset);
+    end
+    if ( frame.debuffFrames[1] ) then
+        frame.debuffFrames[1]:ClearAllPoints();
+        frame.debuffFrames[1]:SetPoint("BOTTOMLEFT", frame, "BOTTOMLEFT", 3, auraOffset);
+    end
+    for i=1, #frame.debuffFrames do
+        frame.debuffFrames[i].maxHeight = options.height - powerBarUsedHeight - CUF_AURA_BOTTOM_OFFSET - CUF_NAME_SECTION_SIZE;
+    end
+
+    if ( options.displayBorder and displayPowerBar ) then
+        frame.horizDivider:ClearAllPoints();
+        frame.horizDivider:SetPoint("TOPLEFT", frame, "BOTTOMLEFT", 0, 1 + powerBarUsedHeight);
+        frame.horizDivider:SetPoint("TOPRIGHT", frame, "BOTTOMRIGHT", 0, 1 + powerBarUsedHeight);
+        frame.horizDivider:SetTexture("Interface\\AddOns\\CompactRaidFrame\\Texture\\RaidFrame\\Raid-HSeparator");
+        frame.horizDivider:SetHeight(8);
+        frame.horizDivider:Show();
+    else
+        frame.horizDivider:Hide();
+    end
+end
+
+-- A frame's power bar can change without a full setup: when the frame is given
+-- another unit, or roles are learned (talent inspection) or change.
+function CompactUnitFrame_UpdatePowerBarDisplay(frame)
+    if ( not frame.powerBarLayoutSetUp ) then
+        return;     -- not a frame laid out by DefaultCompactUnitFrameSetup
+    end
+    local options = DefaultCompactUnitFrameSetupOptions;
+    local displayPowerBar = CompactUnitFrame_GetOptionDisplayPowerBar(frame, options);
+    if ( displayPowerBar ~= frame.powerBarDisplayed ) then
+        CompactUnitFrame_LayoutPowerBar(frame, options, displayPowerBar);
+    end
+end
+
 function DefaultCompactUnitFrameSetup(frame)
     local options = DefaultCompactUnitFrameSetupOptions;
     local componentScale = min(options.height / NATIVE_UNIT_FRAME_HEIGHT, options.width / NATIVE_UNIT_FRAME_WIDTH);
@@ -1485,8 +1566,8 @@ function DefaultCompactUnitFrameSetup(frame)
     frame:SetSize(options.width, options.height);
     frame.overlay:SetParent(frame.healthBar);
 
-    local powerBarHeight = 8;
-    local powerBarUsedHeight = options.displayPowerBar and powerBarHeight or 0;
+    local displayPowerBar = CompactUnitFrame_GetOptionDisplayPowerBar(frame, options);
+    local powerBarUsedHeight = displayPowerBar and POWER_BAR_HEIGHT or 0;
 
     frame.myHealPrediction = frame.overlay.myHealPrediction;
     frame.otherHealPrediction = frame.overlay.otherHealPrediction;
@@ -1505,26 +1586,9 @@ function DefaultCompactUnitFrameSetup(frame)
     frame.background:SetTexture("Interface\\AddOns\\CompactRaidFrame\\Texture\\RaidFrame\\Raid-Bar-Hp-Bg");
     frame.background:SetTexCoord(0, 1, 0, 0.53125);
     frame.healthBar:SetPoint("TOPLEFT", frame, "TOPLEFT", 1, -1);
-    frame.healthBar:SetPoint("BOTTOMRIGHT", frame, "BOTTOMRIGHT", -1, 1 + powerBarUsedHeight);
     frame.healthBar:SetStatusBarTexture("Interface\\AddOns\\CompactRaidFrame\\Texture\\RaidFrame\\Raid-Bar-Hp-Fill", "BORDER");
     frame.healthBar:SetFrameLevel(frame:GetFrameLevel());
-
-    if ( frame.powerBar ) then
-        if ( options.displayPowerBar ) then
-            if ( options.displayBorder ) then
-                frame.powerBar:SetPoint("TOPLEFT", frame.healthBar, "BOTTOMLEFT", 0, -2);
-            else
-                frame.powerBar:SetPoint("TOPLEFT", frame.healthBar, "BOTTOMLEFT", 0, 0);
-            end
-            frame.powerBar:SetPoint("BOTTOMRIGHT", frame, "BOTTOMRIGHT", -1, 1);
-            frame.powerBar:SetStatusBarTexture("Interface\\AddOns\\CompactRaidFrame\\Texture\\RaidFrame\\Raid-Bar-Resource-Fill", "BORDER");
-            frame.powerBar.background:SetTexture("Interface\\AddOns\\CompactRaidFrame\\Texture\\RaidFrame\\Raid-Bar-Resource-Background");
-            frame.powerBar:Show();
-            frame.powerBar:SetParent(frame.healthBar);
-        else
-            frame.powerBar:Hide();
-        end
-    end
+    -- health bar bottom, power bar, aura offsets and divider: see the end
 
     frame.myHealPrediction:ClearAllPoints();
     frame.myHealPrediction:SetTexture(1,1,1);
@@ -1660,16 +1724,6 @@ function DefaultCompactUnitFrameSetup(frame)
         frame.vertRightBorder:SetWidth(8);
         frame.vertRightBorder:Show();
 
-        if ( options.displayPowerBar ) then
-            frame.horizDivider:ClearAllPoints();
-            frame.horizDivider:SetPoint("TOPLEFT", frame, "BOTTOMLEFT", 0, 1 + powerBarUsedHeight);
-            frame.horizDivider:SetPoint("TOPRIGHT", frame, "BOTTOMRIGHT", 0, 1 + powerBarUsedHeight);
-            frame.horizDivider:SetTexture("Interface\\AddOns\\CompactRaidFrame\\Texture\\RaidFrame\\Raid-HSeparator");
-            frame.horizDivider:SetHeight(8);
-            frame.horizDivider:Show();
-        else
-            frame.horizDivider:Hide();
-        end
     else
         frame.horizTopBorder:Hide();
         frame.horizBottomBorder:Hide();
@@ -1677,6 +1731,9 @@ function DefaultCompactUnitFrameSetup(frame)
         frame.vertRightBorder:Hide();
         frame.horizDivider:Hide();
     end
+
+    CompactUnitFrame_LayoutPowerBar(frame, options, displayPowerBar);
+    frame.powerBarLayoutSetUp = true;
 
     CompactUnitFrame_SetOptionTable(frame, DefaultCompactUnitFrameOptions)
 end

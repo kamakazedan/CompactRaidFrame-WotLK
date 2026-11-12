@@ -60,7 +60,14 @@ end
 function CompactRaidGroup_UpdateUnits(frame)
     local groupIndex = frame:GetID();
     local frameIndex = 1;
-    if ( IsInRaid() ) then
+    local previewSize = CRF_GetRaidPreviewSize and CRF_GetRaidPreviewSize();
+    if ( previewSize ) then
+        -- Raid size preview: this group's share of the placeholders.
+        local count = max(0, min(MEMBERS_PER_RAID_GROUP, previewSize - (groupIndex - 1) * MEMBERS_PER_RAID_GROUP));
+        for i=1, MEMBERS_PER_RAID_GROUP do
+            CompactUnitFrame_SetUnit(_G[frame:GetName().."Member"..i], (i <= count) and "player" or nil);
+        end
+    elseif ( IsInRaid() ) then
         for i=1, GetNumGroupMembers() do
             local name, rank, subgroup = GetRaidRosterInfo(i);
             if ( subgroup == groupIndex and frameIndex <= MEMBERS_PER_RAID_GROUP ) then
@@ -72,6 +79,15 @@ function CompactRaidGroup_UpdateUnits(frame)
         for i=frameIndex, MEMBERS_PER_RAID_GROUP do
             local unitFrame = _G[frame:GetName().."Member"..i];
             CompactUnitFrame_SetUnit(unitFrame, nil);
+        end
+    else
+        -- Not in a raid, so the group frames are not in use: drop leftover
+        -- units (placeholders from a preview, or the last raid's members).
+        for i=1, MEMBERS_PER_RAID_GROUP do
+            local unitFrame = _G[frame:GetName().."Member"..i];
+            if ( unitFrame.unit ) then
+                CompactUnitFrame_SetUnit(unitFrame, nil);
+            end
         end
     end
 end

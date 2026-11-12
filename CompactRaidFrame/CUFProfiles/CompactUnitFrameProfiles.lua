@@ -630,13 +630,116 @@ function CompactUnitFrameProfiles_SetUseRaidStylePartyFrames(enabled)
 end
 
 --------------------------------------------------------------
+-- Group layout ("Groups", as in Edit Mode). Stored in the profile as Keep
+-- Groups Together + Horizontal Groups. Used by the Layout tab and the raid
+-- manager side bar.
+--------------------------------------------------------------
+CRF_GROUP_LAYOUTS = {
+	{ key = "combineVertical",    keepGroupsTogether = false, horizontalGroups = false, text = "CRF_GROUPS_COMBINE_VERTICAL",    fallback = "Combine Groups (Vertical)" },
+	{ key = "combineHorizontal",  keepGroupsTogether = false, horizontalGroups = true,  text = "CRF_GROUPS_COMBINE_HORIZONTAL",  fallback = "Combine Groups (Horizontal)" },
+	{ key = "separateVertical",   keepGroupsTogether = true,  horizontalGroups = false, text = "CRF_GROUPS_SEPARATE_VERTICAL",   fallback = "Separate Groups (Vertical)" },
+	{ key = "separateHorizontal", keepGroupsTogether = true,  horizontalGroups = true,  text = "CRF_GROUPS_SEPARATE_HORIZONTAL", fallback = "Separate Groups (Horizontal)" },
+};
+
+function CRF_GetGroupLayout(profile)
+	if ( not profile ) then
+		return nil;
+	end
+	local keep = GetRaidProfileOption(profile, "keepGroupsTogether") and true or false;
+	local horizontal = GetRaidProfileOption(profile, "horizontalGroups") and true or false;
+	for _, layout in ipairs(CRF_GROUP_LAYOUTS) do
+		if ( layout.keepGroupsTogether == keep and layout.horizontalGroups == horizontal ) then
+			return layout;
+		end
+	end
+end
+
+function CRF_GetGroupLayoutText(layout)
+	if ( not layout ) then
+		return "";
+	end
+	return _G[layout.text] or layout.fallback;
+end
+
+-- saved: the raid manager applies and saves at once; the options panel leaves
+-- it as an unsaved edit, like its other controls.
+function CRF_SetGroupLayout(profile, layout, saved)
+	if ( not (profile and layout) ) then
+		return;
+	end
+	local setOption = saved and CRF_SetRaidProfileOptionSaved or SetRaidProfileOption;
+	setOption(profile, "keepGroupsTogether", layout.keepGroupsTogether);
+	setOption(profile, "horizontalGroups", layout.horizontalGroups);
+	if ( profile == GetActiveRaidProfile() ) then
+		CompactUnitFrameProfiles_ApplyProfile(profile);
+	end
+	if ( CompactUnitFrameProfiles:IsVisible() ) then
+		CompactUnitFrameProfiles_UpdateCurrentPanel();
+	end
+	CompactRaidFrameManager_UpdateLayoutSelectors();
+end
+
+function CompactUnitFrameProfilesGroupsDropdown_OnClick(button, layout)
+	if ( InCombatLockdown() ) then
+		DEFAULT_CHAT_FRAME:AddMessage(COMPACT_UNIT_FRAME_ERRCOMBAT);
+		return;
+	end
+	CRF_SetGroupLayout(CompactUnitFrameProfiles.selectedProfile, layout, false);
+end
+
+-- Raid size preview texts and menu (CRF_SetRaidPreviewSize lives in
+-- CompactRaidFrameContainer.lua).
+CRF_RAID_PREVIEW_SIZES = { 10, 25, 40 };
+
+function CRF_GetRaidPreviewText(size)
+	if ( not size ) then
+		return CRF_PREVIEW_OFF or "Off";
+	end
+	return format(CRF_PREVIEW_PLAYERS or "%d Players", size);
+end
+
+-- "Preview: 25 Players" (the raid manager's dropdown has no label of its own).
+function CRF_GetRaidPreviewLabel(size)
+	return format(CRF_PREVIEW_FORMAT or "Preview: %s", CRF_GetRaidPreviewText(size));
+end
+
+function CRF_AddRaidPreviewMenuButtons(onClick)
+	local current = CRF_GetRaidPreviewSize();
+	local inCombat = InCombatLockdown();
+	for i = 0, #CRF_RAID_PREVIEW_SIZES do
+		local size = CRF_RAID_PREVIEW_SIZES[i];		-- i = 0: off
+		local info = C_UIDropDownMenu_CreateInfo();
+		info.text = CRF_GetRaidPreviewText(size);
+		info.value = size or 0;
+		info.arg1 = size;
+		info.func = onClick;
+		info.checked = (current == size);
+		info.disabled = inCombat and size ~= nil;
+		C_UIDropDownMenu_AddButton(info);
+	end
+end
+
+function CompactUnitFrameProfilesPreviewDropdown_OnClick(button, size)
+	CRF_SetRaidPreviewSize(size);
+end
+
+-- Preview switched on or off (from either dropdown, or by combat starting).
+function CRF_OnRaidPreviewChanged()
+	CompactRaidFrameManager_UpdateLayoutSelectors();
+	local options = CompactUnitFrameProfiles.optionsFrame;
+	if ( options and options.previewDropdown ) then
+		options.previewDropdown:updateFunc();
+	end
+end
+
+--------------------------------------------------------------
 -----------------Options panel layout-------------------------
 --------------------------------------------------------------
 -- The 3.3.5a Interface Options panel is about 413 x 428. Blizzard's retail
 -- layout assumed a far bigger one, so the Auto-Activate column, the health text
 -- dropdown and the size sliders hung outside the window. Now:
---   title / separator / [profile v] [Save] [Delete]        (XML)
---   [General] [Display] [Auto-Activate] tabs over a box    (built here)
+--   title / separator / [profile v] [Save] [Delete]                (XML)
+--   [General] [Layout] [Display] [Auto-Activate] tabs over a box   (built here)
 local OPTIONS_BOX_TOP = -114;   -- top edge of the tabbed box, relative to the panel
 local OPTIONS_BOX_INSET = 12;   -- left / right / bottom margin of the box
 local PAGE_INSET = 8;           -- padding inside the box
@@ -693,7 +796,40 @@ local function CreateProfileSlider(page, suffix, optionName, minValue, maxValue,
 	return slider;
 end
 
--- General: account-wide visibility toggles, then group layout.
+-- A dropdown that is not a single profile option (the group layout) or not
+-- saved at all (the preview): its own menu and refresh, same look and label.
+local function CreateCustomDropdown(page, suffix, labelText, width, initFunc, updateFunc)
+	local dropdown = CreateFrame("Frame", page:GetName()..suffix, page, "CompactUnitFrameProfilesDropdownTemplate");
+	dropdown.label:SetText(labelText);
+	dropdown.width = width;
+	dropdown.initFunc = initFunc;
+	dropdown.updateFunc = updateFunc;	-- also run by CompactUnitFrameProfiles_UpdateCurrentPanel
+	dropdown:SetScript("OnShow", function(self)
+		C_UIDropDownMenu_SetWidth(self, self.width);
+		C_UIDropDownMenu_Initialize(self, self.initFunc);
+		self:updateFunc();
+	end);
+	CompactUnitFrameProfilesOption_OnLoad(dropdown);
+	return dropdown;
+end
+
+local function CreateResetPositionButton(page)
+	local resetPosition = CreateFrame("Button", page:GetName().."ResetPositionButton", page, "UIPanelButtonTemplate2");
+	resetPosition:SetWidth(160);
+	resetPosition:SetHeight(22);
+	resetPosition:SetText(RESET_POSITION);
+	resetPosition:SetScript("OnClick", function()
+		PlaySound("igMainMenuOptionCheckBoxOn");
+		if ( InCombatLockdown() ) then
+			DEFAULT_CHAT_FRAME:AddMessage(COMPACT_UNIT_FRAME_ERRCOMBAT);
+			return;
+		end
+		CompactRaidFrameManager_ResetContainerPosition();
+	end);
+	return resetPosition;
+end
+
+-- General: account-wide settings, then which extra frames to show.
 local function CreateGeneralPage(options, page)
 	local raidStyle = CreateAccountCheckButton(page, "RaidStylePartyFrames",
 		USE_RAID_STYLE_PARTY_FRAMES, OPTION_TOOLTIP_USE_RAID_STYLE_PARTY_FRAMES,
@@ -713,73 +849,113 @@ local function CreateGeneralPage(options, page)
 		CRF_IsManagerTabFadeEnabled, CRF_SetManagerTabFadeEnabled);
 	tabMouseover:SetPoint("TOPLEFT", alwaysShow, "BOTTOMLEFT", 0, 0);
 
+	local hidePlayerFrame = CreateAccountCheckButton(page, "HidePlayerFrame",
+		CRF_HIDE_PLAYER_FRAME or "Hide player frame when raid frames are shown",
+		CRF_HIDE_PLAYER_FRAME_TOOLTIP,
+		CRF_IsHidePlayerFrameEnabled, CRF_SetHidePlayerFrameEnabled);
+	hidePlayerFrame:SetPoint("TOPLEFT", tabMouseover, "BOTTOMLEFT", 0, 0);
+
 	-- Both anchors on the page's top edge: mixing TOPLEFT with a plain RIGHT
 	-- anchor would also pin the line's vertical centre and stretch it.
-	local ACCOUNT_ROWS = 3;
+	local ACCOUNT_ROWS = 4;
 	local divider = page:CreateTexture(page:GetName().."Divider", "ARTWORK");
 	divider:SetTexture(0.25, 0.25, 0.25);
 	divider:SetHeight(1);
 	divider:SetPoint("TOPLEFT", page, "TOPLEFT", 2, -(ACCOUNT_ROWS * 26 + 6));
 	divider:SetPoint("TOPRIGHT", page, "TOPRIGHT", -2, -(ACCOUNT_ROWS * 26 + 6));
 
-	local keepGroups = CreateProfileCheckButton(page, "KeepGroupsTogether", "keepGroupsTogether", function(self)
-		local currentValue = GetRaidProfileOption(CompactUnitFrameProfiles.selectedProfile, self.optionName);
-		if ( currentValue ) then
-			self.sortBy:Hide();
-			self.horizontalGroups:Show();
-		else
-			self.sortBy:Show();
-			self.horizontalGroups:Hide();
-		end
-		self:SetChecked(currentValue);
-	end);
-	keepGroups:SetPoint("TOPLEFT", tabMouseover, "BOTTOMLEFT", 0, -14);
-
-	-- Only one of these two is shown, depending on Keep Groups Together.
-	local horizontalGroups = CreateProfileCheckButton(page, "HorizontalGroups", "horizontalGroups");
-	horizontalGroups:SetPoint("TOPLEFT", keepGroups, "BOTTOMLEFT", SUB_INDENT, 0);
-	horizontalGroups:Hide();
-
-	local sortBy = CreateProfileDropdown(page, "SortByDropdown", "sortBy", { "role", "group", "alphabetical" }, 110);
-	sortBy:SetPoint("TOPLEFT", keepGroups, "BOTTOMLEFT", SUB_INDENT + DROPDOWN_OFFSET_X, -14);
-
-	keepGroups.horizontalGroups = horizontalGroups;
-	keepGroups.sortBy = sortBy;
-
 	local displayPets = CreateProfileCheckButton(page, "DisplayPets", "displayPets");
-	displayPets:SetPoint("TOPLEFT", keepGroups, "BOTTOMLEFT", 0, -50);
+	displayPets:SetPoint("TOPLEFT", hidePlayerFrame, "BOTTOMLEFT", 0, -14);
 
 	local displayMainTankAndAssist = CreateProfileCheckButton(page, "DisplayMainTankAndAssist", "displayMainTankAndAssist");
 	displayMainTankAndAssist:SetPoint("TOPLEFT", displayPets, "BOTTOMLEFT", 0, 0);
-
-	local resetPosition = CreateFrame("Button", page:GetName().."ResetPositionButton", page, "UIPanelButtonTemplate2");
-	resetPosition:SetWidth(160);
-	resetPosition:SetHeight(22);
-	resetPosition:SetText(RESET_POSITION);
-	resetPosition:SetPoint("BOTTOMRIGHT", page, "BOTTOMRIGHT", 0, 0);
-	resetPosition:SetScript("OnClick", function()
-		PlaySound("igMainMenuOptionCheckBoxOn");
-		if ( InCombatLockdown() ) then
-			DEFAULT_CHAT_FRAME:AddMessage(COMPACT_UNIT_FRAME_ERRCOMBAT);
-			return;
-		end
-		CompactRaidFrameManager_ResetContainerPosition();
-	end);
 end
 
--- Display: how each unit frame looks.
+-- Layout: how the frames are arranged and sized (like Edit Mode's Raid Frames).
+local function CreateLayoutPage(options, page)
+	-- Groups: Combine / Separate, Vertical / Horizontal (Keep Groups Together +
+	-- Horizontal Groups in the profile).
+	local groups = CreateCustomDropdown(page, "GroupsDropdown", CRF_GROUPS or "Groups", 170,
+		function(self)
+			local current = CRF_GetGroupLayout(CompactUnitFrameProfiles.selectedProfile);
+			for _, layout in ipairs(CRF_GROUP_LAYOUTS) do
+				local info = C_UIDropDownMenu_CreateInfo();
+				info.text = CRF_GetGroupLayoutText(layout);
+				info.value = layout.key;
+				info.arg1 = layout;
+				info.func = CompactUnitFrameProfilesGroupsDropdown_OnClick;
+				info.checked = (layout == current);
+				info.disabled = InCombatLockdown();
+				C_UIDropDownMenu_AddButton(info);
+			end
+		end,
+		function(self)
+			local layout = CRF_GetGroupLayout(CompactUnitFrameProfiles.selectedProfile);
+			C_UIDropDownMenu_SetText(self, CRF_GetGroupLayoutText(layout));
+			-- Sort By only applies when groups are combined.
+			if ( layout and not layout.keepGroupsTogether ) then
+				self.sortBy:Show();
+			else
+				self.sortBy:Hide();
+			end
+		end);
+	groups:SetPoint("TOPLEFT", page, "TOPLEFT", DROPDOWN_OFFSET_X, -16);
+
+	local sortBy = CreateProfileDropdown(page, "SortByDropdown", "sortBy", { "role", "group", "alphabetical" }, 110);
+	sortBy:SetPoint("TOPLEFT", groups, "TOPRIGHT", -16, 0);
+	groups.sortBy = sortBy;
+
+	local border = CreateProfileCheckButton(page, "DisplayBorder", "displayBorder");
+	border:SetPoint("TOPLEFT", groups, "BOTTOMLEFT", -DROPDOWN_OFFSET_X, -4);
+
+	local heightSlider = CreateProfileSlider(page, "HeightSlider", "frameHeight", 36, 96, 2, SHORT, TALL);
+	heightSlider:SetPoint("TOPLEFT", border, "BOTTOMLEFT", 14, -24);
+
+	local widthSlider = CreateProfileSlider(page, "WidthSlider", "frameWidth", 72, 186, 2, NARROW, WIDE);
+	widthSlider:SetPoint("LEFT", heightSlider, "RIGHT", 44, 0);
+
+	-- Raid size preview (not part of the profile; ends when combat starts).
+	local preview = CreateCustomDropdown(page, "RaidSizePreviewDropdown", CRF_RAID_SIZE_PREVIEW or "Raid Size Preview", 110,
+		function(self)
+			CRF_AddRaidPreviewMenuButtons(CompactUnitFrameProfilesPreviewDropdown_OnClick);
+		end,
+		function(self)
+			C_UIDropDownMenu_SetText(self, CRF_GetRaidPreviewText(CRF_GetRaidPreviewSize()));
+		end);
+	preview:SetPoint("TOPLEFT", heightSlider, "BOTTOMLEFT", -14 + DROPDOWN_OFFSET_X, -36);
+	options.previewDropdown = preview;
+
+	local resetPosition = CreateResetPositionButton(page);
+	resetPosition:SetPoint("BOTTOMRIGHT", page, "BOTTOMRIGHT", 0, 0);
+end
+
+-- Display: what each unit frame shows.
 local function CreateDisplayPage(options, page)
-	local powerBar = CreateProfileCheckButton(page, "DisplayPowerBar", "displayPowerBar");
-	powerBar:SetPoint("TOPLEFT", page, "TOPLEFT", 0, 0);
+	local healPrediction = CreateProfileCheckButton(page, "DisplayHealPrediction", "displayHealPrediction");
+	healPrediction:SetPoint("TOPLEFT", page, "TOPLEFT", 0, 0);
+
+	-- "Only healer" is greyed out (not hidden: no empty row) without power bars.
+	local onlyHealer;
+	local powerBar = CreateProfileCheckButton(page, "DisplayPowerBar", "displayPowerBar", function(self)
+		local currentValue = GetRaidProfileOption(CompactUnitFrameProfiles.selectedProfile, self.optionName);
+		self:SetChecked(currentValue);
+		if ( currentValue ) then
+			onlyHealer:Enable();
+		else
+			onlyHealer:Disable();
+		end
+	end);
+	powerBar:SetPoint("TOPLEFT", healPrediction, "BOTTOMLEFT", 0, 0);
+
+	onlyHealer = CreateProfileCheckButton(page, "DisplayOnlyHealerPowerBars", "displayOnlyHealerPowerBars");
+	onlyHealer:SetPoint("TOPLEFT", powerBar, "BOTTOMLEFT", SUB_INDENT, 0);
+	onlyHealer.disabledTooltip = CRF_REQUIRES_POWER_BARS;
 
 	local aggroHighlight = CreateProfileCheckButton(page, "DisplayAggroHighlight", "displayAggroHighlight");
-	aggroHighlight:SetPoint("TOPLEFT", powerBar, "BOTTOMLEFT", 0, 0);
+	aggroHighlight:SetPoint("TOPLEFT", powerBar, "BOTTOMLEFT", 0, -26);
 
 	local classColors = CreateProfileCheckButton(page, "UseClassColors", "useClassColors");
 	classColors:SetPoint("TOPLEFT", aggroHighlight, "BOTTOMLEFT", 0, 0);
-
-	local border = CreateProfileCheckButton(page, "DisplayBorder", "displayBorder");
-	border:SetPoint("TOPLEFT", classColors, "BOTTOMLEFT", 0, 0);
 
 	local showDebuffs = CreateProfileCheckButton(page, "ShowDebuffs", "displayNonBossDebuffs", function(self)
 		local currentValue = GetRaidProfileOption(CompactUnitFrameProfiles.selectedProfile, self.optionName);
@@ -790,7 +966,7 @@ local function CreateDisplayPage(options, page)
 		end
 		self:SetChecked(currentValue);
 	end);
-	showDebuffs:SetPoint("TOPLEFT", border, "BOTTOMLEFT", 0, 0);
+	showDebuffs:SetPoint("TOPLEFT", classColors, "BOTTOMLEFT", 0, 0);
 
 	local onlyDispellable = CreateProfileCheckButton(page, "DisplayOnlyDispellableDebuffs", "displayOnlyDispellableDebuffs");
 	onlyDispellable:SetPoint("TOPLEFT", showDebuffs, "BOTTOMLEFT", SUB_INDENT, 0);
@@ -798,12 +974,6 @@ local function CreateDisplayPage(options, page)
 
 	local healthText = CreateProfileDropdown(page, "HealthTextDropdown", "healthText", { "none", "health", "losthealth", "perc" });
 	healthText:SetPoint("TOPLEFT", showDebuffs, "BOTTOMLEFT", DROPDOWN_OFFSET_X, -46);
-
-	local heightSlider = CreateProfileSlider(page, "HeightSlider", "frameHeight", 36, 96, 2, SHORT, TALL);
-	heightSlider:SetPoint("TOPLEFT", healthText, "BOTTOMLEFT", 26, -26);
-
-	local widthSlider = CreateProfileSlider(page, "WidthSlider", "frameWidth", 72, 186, 2, NARROW, WIDE);
-	widthSlider:SetPoint("LEFT", heightSlider, "RIGHT", 44, 0);
 end
 
 -- Auto-Activate: which group sizes / content switch to this profile.
@@ -854,6 +1024,7 @@ end
 
 local OPTION_TABS = {
 	{ suffix = "General",      text = CRF_OPTIONS_TAB_GENERAL or "General",            build = CreateGeneralPage },
+	{ suffix = "Layout",       text = CRF_OPTIONS_TAB_LAYOUT or "Layout",              build = CreateLayoutPage },
 	{ suffix = "Display",      text = CRF_OPTIONS_TAB_DISPLAY or "Display",            build = CreateDisplayPage },
 	{ suffix = "AutoActivate", text = CRF_OPTIONS_TAB_AUTOACTIVATE or "Auto-Activate", build = CreateAutoActivatePage },
 };
@@ -955,6 +1126,11 @@ function CompactUnitFrameProfiles_ApplyProfile(profile)
 
 	--Update the container in case sizes and such changed.
 	CompactRaidFrameContainer_TryUpdate(CompactRaidFrameContainer);
+
+	--The raid manager's Groups dropdown shows this profile's layout.
+	if ( CompactRaidFrameManager_UpdateLayoutSelectors ) then
+		CompactRaidFrameManager_UpdateLayoutSelectors();
+	end
 end
 
 local function CompactUnitFrameProfiles_GenerateRaidManagerSetting(optionName)
@@ -992,6 +1168,8 @@ CUFProfileActionTable = {
 	displayPets = CompactUnitFrameProfiles_GenerateRaidManagerSetting("DisplayPets"),
 	displayMainTankAndAssist = CompactUnitFrameProfiles_GenerateRaidManagerSetting("DisplayMainTankAndAssist"),
 	displayPowerBar = CompactUnitFrameProfiles_GenerateSetUpOptionSetter("displayPowerBar", "normal"),
+	displayOnlyHealerPowerBars = CompactUnitFrameProfiles_GenerateSetUpOptionSetter("displayOnlyHealerPowerBars", "normal"),
+	displayHealPrediction = CompactUnitFrameProfiles_GenerateOptionSetter("displayHealPrediction", "all"),
 	displayAggroHighlight = CompactUnitFrameProfiles_GenerateOptionSetter("displayAggroHighlight", "all"),
 	displayNonBossDebuffs = CompactUnitFrameProfiles_GenerateOptionSetter("displayNonBossDebuffs", "normal"),
 	displayOnlyDispellableDebuffs = CompactUnitFrameProfiles_GenerateOptionSetter("displayOnlyDispellableDebuffs", "normal"),

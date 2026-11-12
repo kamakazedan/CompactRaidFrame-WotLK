@@ -1,5 +1,41 @@
 # Compact Raid Frames (3.3.5a) - changelog
 
+## 1.19
+
+### New options
+- Display tab: **Display Incoming Heals** (incoming heals and absorb shields on
+  the health bars; on, as before, for new and existing profiles) and **Display
+  Only Healer Power Bars** (under Display Power Bars). Healers are recognised
+  from their Dungeon Finder role or, in other groups, from their talents, which
+  are read a few seconds after someone joins.
+- General tab: **Hide player frame when raid frames are shown** (on by
+  default). Hides Blizzard's player frame while the raid frames are on screen,
+  including when you join or leave a group in combat. It stays visible in
+  vehicles, and totem timers and Death Knight runes stay on screen. The pet
+  frame is part of the player frame and hides with it (tick Display Pets to see
+  your pet in the raid frames).
+
+### Layout
+- New **Layout** tab: Groups, Sort By, Display Border, frame height / width,
+  Raid Size Preview and Reset Position (moved here from General and Display).
+- **Groups** replaces Keep Groups Together / Horizontal Groups, as in the
+  newer Edit Mode: Combine Groups (Vertical), Combine Groups (Horizontal),
+  Separate Groups (Vertical) and Separate Groups (Horizontal). Existing
+  profiles keep their setting. Combine Groups (Horizontal) is new (rows of 5),
+  and Separate Groups (Vertical) now places the groups side by side instead of
+  stacking them in one tall column.
+- Raid manager side bar: **Groups** and **Raid Size Preview** dropdowns under
+  the profile dropdown. Changes made there are saved straight away.
+- **Raid Size Preview**: fills the raid frames with 10, 25 or 40 placeholder
+  frames (all showing you) in the current layout, so the frames can be sized
+  and placed while solo. It shows the raid frames even when they would
+  otherwise be hidden, ends when combat starts and can't be started in combat.
+
+### Fixes
+- Blizzard's party frames now come back straight away after switching from
+  raid-style party frames to them (they stayed hidden until the next change
+  in the party).
+
 ## 1.18
 
 - "Always show (even when solo)" is now off by default: when you are not in a

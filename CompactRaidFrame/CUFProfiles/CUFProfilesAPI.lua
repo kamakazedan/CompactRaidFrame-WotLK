@@ -12,10 +12,14 @@ local DEFAULT_PROFILE = {
 	displayMainTankAndAssist = true,
 	displayBorder = true,
 	displayNonBossDebuffs = true,
+	displayHealPrediction = true,
 	healthText = "none",
 	frameWidth = 72,
 	frameHeight = 36,
 };
+
+-- Bumped when stored profiles need a one-time update (see ADDON_LOADED below).
+local OPTIONS_VERSION = 2;
 
 local ALL_OPTIONS = {
 	shown = 0,
@@ -24,6 +28,8 @@ local ALL_OPTIONS = {
 	horizontalGroups = 1,
 	sortBy = 1,
 	displayPowerBar = 1,
+	displayOnlyHealerPowerBars = 1,
+	displayHealPrediction = 1,
 	displayAggroHighlight = 1,
 	useClassColors = 1,
 	displayPets = 1,
@@ -85,6 +91,17 @@ ProfileAPI:SetScript("OnEvent", function(self, event, addon)
 		if ( DB.useCompactPartyFrames == nil ) then
 			DB.useCompactPartyFrames = "1";
 		end
+
+		-- Options added later. A profile stores "off" as a missing key, so a
+		-- new option that should start out on has to be switched on once in
+		-- the profiles saved before it existed.
+		if ( (DB.crfOptionsVersion or 1) < 2 ) then
+			-- 1.19: "Display Incoming Heals" (heal prediction was always shown).
+			for i=1,#DB do
+				DB[i].displayHealPrediction = true;
+			end
+		end
+		DB.crfOptionsVersion = OPTIONS_VERSION;
 
 		PROFILES = DB;
 		CUF_CONFIG = DB;
@@ -240,6 +257,16 @@ function SetRaidProfileOption(profile, optionName, value)
 	end
 end
 
+-- Like SetRaidProfileOption, but the change counts as saved: the snapshot that
+-- Cancel restores gets the same value. Used by the raid manager's own controls,
+-- which apply at once; other unsaved edits in the options panel stay unsaved.
+function CRF_SetRaidProfileOptionSaved(profile, optionName, value)
+	SetRaidProfileOption(profile, optionName, value);
+	if ( PROFILE_COPY and PROFILE_COPY.name == profile ) then
+		PROFILE_COPY[optionName] = value or nil;
+	end
+end
+
 function GetRaidProfileOption(profile, optionName)
 	if ( not PROFILES or not profile or not optionName ) then
 		return;
@@ -377,5 +404,25 @@ end
 function CRF_SetManagerTabFadeEnabled(enabled)
 	if ( CUF_CONFIG ) then
 		CUF_CONFIG.fadeManagerTab = enabled and true or false;
+	end
+end
+
+-- "Hide player frame when raid frames are shown". Account-wide; nil = never
+-- set = on. CRF_UpdatePlayerFrameVisibility (CompactRaidFrameManager.lua) does
+-- the work and postpones it until combat ends if needed.
+function CRF_IsHidePlayerFrameEnabled()
+	local value = CUF_CONFIG and CUF_CONFIG.hidePlayerFrame;
+	if ( value == nil ) then
+		return true;
+	end
+	return value and true or false;
+end
+
+function CRF_SetHidePlayerFrameEnabled(enabled)
+	if ( CUF_CONFIG ) then
+		CUF_CONFIG.hidePlayerFrame = enabled and true or false;
+	end
+	if ( CRF_UpdatePlayerFrameVisibility ) then
+		CRF_UpdatePlayerFrameVisibility();
 	end
 end

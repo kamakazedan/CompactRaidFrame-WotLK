@@ -43,6 +43,7 @@ function CompactRaidFrameContainer_OnLoad(self)
     CompactRaidFrameContainer_UpdateDisplayedUnits(self);
 
     self:RegisterEvent("PLAYER_REGEN_ENABLED");
+    self:RegisterEvent("PLAYER_REGEN_DISABLED");
     self:RegisterEvent("PLAYER_ENTERING_WORLD");
     self:RegisterEvent("GROUP_ROSTER_UPDATE");
     self:RegisterEvent("UNIT_PET");
@@ -79,6 +80,12 @@ function CompactRaidFrameContainer_OnEvent(self, event, ...)
         if ( PLAYER_REGEN_ENABLED_AWAIT ) then
             PLAYER_REGEN_ENABLED_AWAIT = nil;
             CompactRaidFrameContainer_OnEvent(self, "GROUP_ROSTER_UPDATE");
+        end
+    elseif ( event == "PLAYER_REGEN_DISABLED" ) then
+        -- Fires just before the combat lockdown starts, so the real frames can
+        -- still be put back here.
+        if ( CRF_GetRaidPreviewSize() ) then
+            CRF_SetRaidPreviewSize(nil);
         end
     elseif ( event == "PLAYER_ENTERING_WORLD" ) then
         _, PLAYER_ZONE_TYPE = IsInInstance();
@@ -203,22 +210,25 @@ function CompactRaidFrameContainer_LayoutFrames(self)
 
     FlowContainer_PauseUpdates(self);   --We don't want to update it every time we add an item.
 
-
-    if ( self.displayFlaggedMembers ) then
-        CompactRaidFrameContainer_AddFlaggedUnits(self);
-        FlowContainer_AddLineBreak(self);
-    end
-
-    if ( self.groupMode == "discrete" ) then
-        CompactRaidFrameContainer_AddGroups(self);
-    elseif ( self.groupMode == "flush" ) then
-        CompactRaidFrameContainer_AddPlayers(self);
+    if ( CRF_GetRaidPreviewSize() ) then
+        CompactRaidFrameContainer_AddPreview(self, CRF_GetRaidPreviewSize());
     else
-        error("Unknown group mode");
-    end
+        if ( self.displayFlaggedMembers ) then
+            CompactRaidFrameContainer_AddFlaggedUnits(self);
+            FlowContainer_AddLineBreak(self);
+        end
 
-    if ( self.displayPets ) then
-        CompactRaidFrameContainer_AddPets(self);
+        if ( self.groupMode == "discrete" ) then
+            CompactRaidFrameContainer_AddGroups(self);
+        elseif ( self.groupMode == "flush" ) then
+            CompactRaidFrameContainer_AddPlayers(self);
+        else
+            error("Unknown group mode");
+        end
+
+        if ( self.displayPets ) then
+            CompactRaidFrameContainer_AddPets(self);
+        end
     end
 
     FlowContainer_ResumeUpdates(self);
@@ -253,9 +263,28 @@ do
         else
             CompactRaidFrameContainer_AddGroup(self, "PARTY");
         end
-        FlowContainer_SetOrientation(self, "+")
+        CompactRaidFrameContainer_SetGroupsArrangement(self);
     end
 
+end
+
+-- "Separate Groups": vertical groups (columns of 5) are placed side by side;
+-- horizontal groups (rows of 5) are stacked top to bottom.
+function CompactRaidFrameContainer_SetGroupsArrangement(self)
+    FlowContainer_SetMaxPerLine(self, nil);
+    FlowContainer_SetOrientation(self, CUF_HORIZONTAL_GROUPS and "vertical" or "horizontal");
+end
+
+-- "Combine Groups": one list, filling columns top to bottom (vertical) or rows
+-- of 5 left to right (horizontal).
+function CompactRaidFrameContainer_SetPlayersArrangement(self)
+    if ( CUF_HORIZONTAL_GROUPS ) then
+        FlowContainer_SetMaxPerLine(self, MEMBERS_PER_RAID_GROUP);
+        FlowContainer_SetOrientation(self, "horizontal");
+    else
+        FlowContainer_SetMaxPerLine(self, nil);
+        FlowContainer_SetOrientation(self, "vertical");
+    end
 end
 
 function CompactRaidFrameContainer_AddGroup(self, id)
@@ -280,6 +309,7 @@ function CompactRaidFrameContainer_AddGroup(self, id)
     FlowContainer_AddObject(self, groupFrame);
 
     groupFrame:Show();
+    return groupFrame;
 end
 
 function CompactRaidFrameContainer_AddPlayers(self)
@@ -296,7 +326,28 @@ function CompactRaidFrameContainer_AddPlayers(self)
         end
     end
 
-    FlowContainer_SetOrientation(self, "vertical")
+    CompactRaidFrameContainer_SetPlayersArrangement(self);
+end
+
+-- Placeholder frames for the raid size preview, in the current group layout.
+-- They all show the player (a unit that always exists), like Edit Mode does.
+function CompactRaidFrameContainer_AddPreview(self, size)
+    if ( self.groupMode == "discrete" ) then
+        for groupNum = 1, min(MAX_RAID_GROUPS, ceil(size / MEMBERS_PER_RAID_GROUP)) do
+            local groupFrame = CompactRaidFrameContainer_AddGroup(self, groupNum);
+            CompactRaidGroup_UpdateUnits(groupFrame);   -- sees the preview
+        end
+        CompactRaidFrameContainer_SetGroupsArrangement(self);
+    else
+        for i = 1, size do
+            -- one reservation per placeholder ("preview1", ...) so each gets
+            -- its own frame although they all show the same unit
+            local frame = CompactRaidFrameContainer_GetUnitFrame(self, "preview"..i, "raid");
+            CompactUnitFrame_SetUnit(frame, "player");
+            FlowContainer_AddObject(self, frame);
+        end
+        CompactRaidFrameContainer_SetPlayersArrangement(self);
+    end
 end
 
 function CompactRaidFrameContainer_AddPets(self)
@@ -417,4 +468,53 @@ function RaidUtil_GetUsedGroups(tab)    --Fills out the table with which groups 
         end
     end
     return tab;
+end
+
+--========================================================================--
+-- Raid size preview ("Raid Size" in the raid manager and the options' Layout
+-- tab). Out of combat, the container is filled with placeholder frames for a
+-- 10-, 25- or 40-player raid in the current group layout, so frame size and
+-- position can be set up while solo. The raid frames and the manager are shown
+-- while it is on. Not saved; it ends when combat starts.
+--========================================================================--
+local raidPreviewSize;
+
+function CRF_GetRaidPreviewSize()
+    return raidPreviewSize;
+end
+
+function CRF_SetRaidPreviewSize(size)
+    size = tonumber(size);
+    if ( size and size <= 0 ) then
+        size = nil;
+    end
+    if ( size == raidPreviewSize ) then
+        return true;
+    end
+    if ( size and InCombatLockdown() ) then
+        DEFAULT_CHAT_FRAME:AddMessage(COMPACT_UNIT_FRAME_ERRCOMBAT);
+        return false;
+    end
+    raidPreviewSize = size;
+
+    -- Placeholder units on group frames are dropped (or real ones restored).
+    -- In combat (only when switching off) these and the layout below wait for
+    -- the end of combat by themselves.
+    if ( not size and not InCombatLockdown() ) then
+        for groupNum = 1, MAX_RAID_GROUPS do
+            local groupFrame = _G["CompactRaidGroup"..groupNum];
+            if ( groupFrame ) then
+                CompactRaidGroup_UpdateUnits(groupFrame);
+            end
+        end
+    end
+    -- Manager / container visibility (shown while previewing) and side bar.
+    if ( CompactRaidFrameManager_UpdateAll ) then
+        CompactRaidFrameManager_UpdateAll(CompactRaidFrameManager);
+    end
+    CompactRaidFrameContainer_TryUpdate(CompactRaidFrameContainer);
+    if ( CRF_OnRaidPreviewChanged ) then
+        CRF_OnRaidPreviewChanged();
+    end
+    return true;
 end
