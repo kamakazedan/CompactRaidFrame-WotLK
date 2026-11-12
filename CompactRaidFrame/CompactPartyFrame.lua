@@ -21,6 +21,22 @@ function CompactPartyFrame_OnLoad(self)
     self.title:Disable();
 end
 
+-- "Party" only in a party: solo (raid frames kept on screen by Always show) the
+-- frame has no title and no gap for it. Run from the container's layout, which
+-- never happens in combat (moving the members is protected).
+function CompactPartyFrame_UpdateTitle(frame)
+    local inGroup = IsInGroup() and true or false;
+    if ( inGroup == (frame.title:IsShown() and true or false) ) then
+        return;
+    end
+    if ( inGroup ) then
+        frame.title:Show();
+    else
+        frame.title:Hide();
+    end
+    CompactRaidGroup_UpdateLayout(frame);
+end
+
 function CompactPartyFrame_Generate()
     local frame = CompactPartyFrame;
     local didCreate = false;

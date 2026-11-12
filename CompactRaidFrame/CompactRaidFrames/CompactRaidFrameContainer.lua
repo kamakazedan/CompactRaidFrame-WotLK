@@ -294,6 +294,7 @@ function CompactRaidFrameContainer_AddGroup(self, id)
         groupFrame, didCreation = CompactRaidGroup_GenerateForGroup(id);
     elseif ( id == "PARTY" ) then
         groupFrame, didCreation = CompactPartyFrame_Generate();
+        CompactPartyFrame_UpdateTitle(groupFrame);
     else
         error("Unknown id");
     end

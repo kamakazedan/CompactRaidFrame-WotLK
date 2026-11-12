@@ -1,5 +1,11 @@
 # Compact Raid Frames (3.3.5a) - changelog
 
+## 1.21
+
+- Separate Groups: the "Party" title is only shown when you are in a party.
+  Solo (raid frames kept on screen by Always show), your frame moves up into
+  its place. If you join a party in combat, the title appears when combat ends.
+
 ## 1.20
 
 - The raid frames no longer end up under the side menu. Frames placed within

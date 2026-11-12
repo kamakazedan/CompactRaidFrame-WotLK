@@ -93,7 +93,9 @@ function CompactRaidGroup_UpdateUnits(frame)
 end
 
 function CompactRaidGroup_UpdateLayout(frame)
-    local totalHeight = frame.title:GetHeight();
+    -- No room for a hidden title (the party frame hides "Party" when solo).
+    local titleHeight = frame.title:IsShown() and frame.title:GetHeight() or 0;
+    local totalHeight = titleHeight;
     local totalWidth = 0;
     if ( CUF_HORIZONTAL_GROUPS ) then
         frame.title:ClearAllPoints();
@@ -101,7 +103,7 @@ function CompactRaidGroup_UpdateLayout(frame)
 
         local frame1 = _G[frame:GetName().."Member1"];
         frame1:ClearAllPoints();
-        frame1:SetPoint("TOPLEFT", frame, "TOPLEFT", 0, -frame.title:GetHeight());
+        frame1:SetPoint("TOPLEFT", frame, "TOPLEFT", 0, -titleHeight);
 
         for i=2, MEMBERS_PER_RAID_GROUP do
             local unitFrame = _G[frame:GetName().."Member"..i];
@@ -116,7 +118,7 @@ function CompactRaidGroup_UpdateLayout(frame)
 
         local frame1 = _G[frame:GetName().."Member1"];
         frame1:ClearAllPoints();
-        frame1:SetPoint("TOP", frame, "TOP", 0, -frame.title:GetHeight());
+        frame1:SetPoint("TOP", frame, "TOP", 0, -titleHeight);
 
         for i=2, MEMBERS_PER_RAID_GROUP do
             local unitFrame = _G[frame:GetName().."Member"..i];
