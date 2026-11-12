@@ -1,5 +1,16 @@
 # Compact Raid Frames (3.3.5a) - changelog
 
+## 1.24
+
+- New Layout tab option **Keep Me at the Top** (next to Display Border, under
+  Sort By), on by default and switched on for existing profiles. Your own
+  frame comes first whatever the sort order:
+  - Combine Groups, in a party or a raid: first with Role, Group or
+    Alphabetical sorting (before, only Group sorting in a party did this).
+  - Separate Groups in a raid: first in your own group (the groups stay in
+    order 1-8). In a party your frame was already first.
+  - Changed in combat, the new order applies when combat ends.
+
 ## 1.23
 
 - The health text is centred in the frame's health bar ("the box"), with the

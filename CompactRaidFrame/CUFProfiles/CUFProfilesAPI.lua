@@ -8,6 +8,7 @@ local DEFAULT_PROFILE = {
 	shown = true,
 	locked = true,
 	sortBy = "group",
+	sortPlayerFirst = true,
 	displayAggroHighlight = true,
 	displayMainTankAndAssist = true,
 	-- displayBorder: off (a missing key is "off")
@@ -28,7 +29,7 @@ local DEFAULT_PROFILE = {
 };
 
 -- Bumped when stored profiles need a one-time update (see ADDON_LOADED below).
-local OPTIONS_VERSION = 3;
+local OPTIONS_VERSION = 4;
 
 local ALL_OPTIONS = {
 	shown = 0,
@@ -36,6 +37,7 @@ local ALL_OPTIONS = {
 	keepGroupsTogether = 1,
 	horizontalGroups = 1,
 	sortBy = 1,
+	sortPlayerFirst = 1,
 	displayPowerBar = 1,
 	displayOnlyHealerPowerBars = 1,
 	displayHealPrediction = 1,
@@ -115,6 +117,12 @@ ProfileAPI:SetScript("OnEvent", function(self, event, addon)
 			-- 1.22: "Display Power Bar Text" (no text before).
 			for i=1,#DB do
 				DB[i].powerText = DB[i].powerText or "none";
+			end
+		end
+		if ( (DB.crfOptionsVersion or 1) < 4 ) then
+			-- 1.24: "Keep Me at the Top" (the player was only first with Group sorting in a party).
+			for i=1,#DB do
+				DB[i].sortPlayerFirst = true;
 			end
 		end
 		DB.crfOptionsVersion = OPTIONS_VERSION;

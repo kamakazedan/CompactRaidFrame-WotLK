@@ -55,6 +55,8 @@ L("COMPACT_UNIT_FRAME_PROFILE_POWERTEXT_PERC", "Pourcentage d'énergie")
 L("COMPACT_UNIT_FRAME_PROFILE_HORIZONTALGROUPS", "Groupes horizontaux")
 L("COMPACT_UNIT_FRAME_PROFILE_KEEPGROUPSTOGETHER", "Groupes solidarisés")
 L("COMPACT_UNIT_FRAME_PROFILE_SORTBY", "Trier par :")
+L("COMPACT_UNIT_FRAME_PROFILE_SORTPLAYERFIRST", "Me garder en haut")
+L("CRF_SORT_PLAYER_FIRST_TOOLTIP", "Votre cadre apparaît toujours en premier, quel que soit le tri. Avec les groupes séparés : en premier dans votre groupe.")
 L("COMPACT_UNIT_FRAME_PROFILE_SORTBY_ALPHABETICAL", "Alphabétique")
 L("COMPACT_UNIT_FRAME_PROFILE_USECLASSCOLORS", "Couleurs de classe")
 

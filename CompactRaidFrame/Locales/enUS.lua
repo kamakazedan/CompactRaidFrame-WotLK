@@ -91,6 +91,8 @@ L("COMPACT_UNIT_FRAME_PROFILE_POWERTEXT_PERC", "Power Percentage")
 L("COMPACT_UNIT_FRAME_PROFILE_HORIZONTALGROUPS", "Horizontal Groups")
 L("COMPACT_UNIT_FRAME_PROFILE_KEEPGROUPSTOGETHER", "Keep Groups Together")
 L("COMPACT_UNIT_FRAME_PROFILE_SORTBY", "Sort By:")
+L("COMPACT_UNIT_FRAME_PROFILE_SORTPLAYERFIRST", "Keep Me at the Top")
+L("CRF_SORT_PLAYER_FIRST_TOOLTIP", "Your own frame always comes first, whatever the sort order. With Separate Groups: first in your group.")
 L("COMPACT_UNIT_FRAME_PROFILE_SORTBY_ALPHABETICAL", "Alphabetical")
 L("COMPACT_UNIT_FRAME_PROFILE_USECLASSCOLORS", "Display Class Colors")
 

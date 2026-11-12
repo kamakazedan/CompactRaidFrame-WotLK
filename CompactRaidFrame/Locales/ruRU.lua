@@ -54,6 +54,8 @@ L("COMPACT_UNIT_FRAME_PROFILE_POWERTEXT_PERC", "Ресурс в процента
 L("COMPACT_UNIT_FRAME_PROFILE_HORIZONTALGROUPS", "Горизонтально")
 L("COMPACT_UNIT_FRAME_PROFILE_KEEPGROUPSTOGETHER", "Группы вместе")
 L("COMPACT_UNIT_FRAME_PROFILE_SORTBY", "Сортировка:")
+L("COMPACT_UNIT_FRAME_PROFILE_SORTPLAYERFIRST", "Своя рамка первой")
+L("CRF_SORT_PLAYER_FIRST_TOOLTIP", "Ваша рамка всегда идёт первой при любой сортировке. При раздельных группах — первой в вашей группе.")
 L("COMPACT_UNIT_FRAME_PROFILE_SORTBY_ALPHABETICAL", "по алфавиту")
 L("COMPACT_UNIT_FRAME_PROFILE_USECLASSCOLORS", "Цвета классов")
 

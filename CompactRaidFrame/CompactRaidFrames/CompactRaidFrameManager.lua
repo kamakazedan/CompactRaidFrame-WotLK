@@ -737,6 +737,8 @@ function CompactRaidFrameManager_GetSettingBeforeLoad(settingName)
         return true;
     elseif ( settingName == "HorizontalGroups" ) then
         return false;
+    elseif ( settingName == "SortPlayerFirst" ) then
+        return true;
     else
         GMError("Unknown setting "..tostring(settingName));
     end
@@ -762,15 +764,39 @@ do  --Enclosure to make sure people go through SetSetting
 
     local function CompactRaidFrameManager_SetSortMode(value)
         local manager = CompactRaidFrameManager;
+        local sortFunc;     -- (the CRFSort_ functions are defined further down this file)
         if ( value == "group" ) then
-            CompactRaidFrameContainer_SetFlowSortFunction(manager.container, CRFSort_Group);
+            sortFunc = CRFSort_Group;
         elseif ( value == "role" ) then
-            CompactRaidFrameContainer_SetFlowSortFunction(manager.container, CRFSort_Role);
+            sortFunc = CRFSort_Role;
         elseif ( value == "alphabetical" ) then
-            CompactRaidFrameContainer_SetFlowSortFunction(manager.container, CRFSort_Alphabetical);
+            sortFunc = CRFSort_Alphabetical;
         else
             CompactRaidFrameManager_SetSetting("SortMode", "role");
             GMError("Unknown sort mode: "..tostring(value));
+            return;
+        end
+        -- "Keep Me at the Top": the player's own frame first, then this order.
+        local playerFirst = CompactRaidFrameManager_GetSetting("SortPlayerFirst");
+        if ( playerFirst and playerFirst ~= "0" ) then
+            sortFunc = CRFSort_PlayerFirst(sortFunc);
+        end
+        CompactRaidFrameContainer_SetFlowSortFunction(manager.container, sortFunc);
+    end
+
+    local function CompactRaidFrameManager_SetSortPlayerFirst(value)
+        -- Combined groups: re-sort. Separate raid groups: re-order the members
+        -- (now, or when combat ends: it assigns units to secure frames).
+        CompactRaidFrameManager_SetSortMode(CompactRaidFrameManager_GetSetting("SortMode"));
+        for i=1, MAX_RAID_GROUPS do
+            local group = _G["CompactRaidGroup"..i];
+            if ( group ) then
+                if ( InCombatLockdown() ) then
+                    group.PLAYER_REGEN_ENABLED_AWAIT = true;
+                else
+                    CompactRaidGroup_UpdateUnits(group);
+                end
+            end
         end
     end
 
@@ -862,6 +888,8 @@ do  --Enclosure to make sure people go through SetSetting
             CompactRaidFrameManager_SetBorderShown(value);
         elseif ( settingName == "HorizontalGroups" ) then
             CompactRaidFrameManager_SetHorizontalGroups(value);
+        elseif ( settingName == "SortPlayerFirst" ) then
+            CompactRaidFrameManager_SetSortPlayerFirst(value);
         else
             error("Unknown setting "..tostring(settingName));
         end
@@ -1201,6 +1229,19 @@ function CRFSort_Role(token1, token2)
 
     --Fallthrough: Sort alphabetically.
     return CRFSort_Alphabetical(token1, token2);
+end
+
+-- Wraps a sort function so the player's own frame comes first ("Keep Me at
+-- the Top"). Still a strict ordering: two non-player tokens (or the player
+-- against itself) fall through to the wrapped order.
+function CRFSort_PlayerFirst(sortFunc)
+    return function(token1, token2)
+        local isPlayer1, isPlayer2 = UnitIsUnit(token1, "player"), UnitIsUnit(token2, "player");
+        if ( (isPlayer1 and true or false) ~= (isPlayer2 and true or false) ) then
+            return isPlayer1 and true or false;
+        end
+        return sortFunc(token1, token2);
+    end
 end
 
 function CRFSort_Alphabetical(token1, token2)

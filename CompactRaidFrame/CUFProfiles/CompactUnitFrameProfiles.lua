@@ -918,6 +918,11 @@ local function CreateLayoutPage(options, page)
 	local border = CreateProfileCheckButton(page, "DisplayBorder", "displayBorder");
 	border:SetPoint("TOPLEFT", groups, "BOTTOMLEFT", -DROPDOWN_OFFSET_X, -4);
 
+	-- Your own frame first, whatever the sort (also with Separate Groups, in your group).
+	local playerFirst = CreateProfileCheckButton(page, "SortPlayerFirst", "sortPlayerFirst");
+	playerFirst:SetPoint("TOPLEFT", groups, "BOTTOMRIGHT", -4, -4);
+	playerFirst.tooltipText = CRF_SORT_PLAYER_FIRST_TOOLTIP;
+
 	local heightSlider = CreateProfileSlider(page, "HeightSlider", "frameHeight", 36, 96, 1, SHORT, TALL);
 	heightSlider:SetPoint("TOPLEFT", border, "BOTTOMLEFT", 14, -24);
 
@@ -1204,6 +1209,7 @@ CUFProfileActionTable = {
 	--Settings
 	keepGroupsTogether = CompactUnitFrameProfiles_GenerateRaidManagerSetting("KeepGroupsTogether"),
 	sortBy = CompactUnitFrameProfiles_GenerateRaidManagerSetting("SortMode"),
+	sortPlayerFirst = CompactUnitFrameProfiles_GenerateRaidManagerSetting("SortPlayerFirst"),
 	displayPets = CompactUnitFrameProfiles_GenerateRaidManagerSetting("DisplayPets"),
 	displayMainTankAndAssist = CompactUnitFrameProfiles_GenerateRaidManagerSetting("DisplayMainTankAndAssist"),
 	displayPowerBar = CompactUnitFrameProfiles_GenerateSetUpOptionSetter("displayPowerBar", "normal"),

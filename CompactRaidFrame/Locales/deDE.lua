@@ -54,6 +54,8 @@ L("COMPACT_UNIT_FRAME_PROFILE_POWERTEXT_PERC", "Ressource in Prozent")
 L("COMPACT_UNIT_FRAME_PROFILE_HORIZONTALGROUPS", "Horizontale Gruppierung")
 L("COMPACT_UNIT_FRAME_PROFILE_KEEPGROUPSTOGETHER", "Gruppen zusammenhalten")
 L("COMPACT_UNIT_FRAME_PROFILE_SORTBY", "Sortieren nach:")
+L("COMPACT_UNIT_FRAME_PROFILE_SORTPLAYERFIRST", "Mich oben anzeigen")
+L("CRF_SORT_PLAYER_FIRST_TOOLTIP", "Euer eigenes Fenster steht immer an erster Stelle, egal wie sortiert wird. Bei getrennten Gruppen: zuerst in Eurer Gruppe.")
 L("COMPACT_UNIT_FRAME_PROFILE_SORTBY_ALPHABETICAL", "Alphabet")
 L("COMPACT_UNIT_FRAME_PROFILE_USECLASSCOLORS", "Klassenfarben anzeigen")
 

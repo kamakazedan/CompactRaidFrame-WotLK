@@ -55,6 +55,8 @@ L("COMPACT_UNIT_FRAME_PROFILE_POWERTEXT_PERC", "Porcentaje de poder")
 L("COMPACT_UNIT_FRAME_PROFILE_HORIZONTALGROUPS", "Grupos en horizontal")
 L("COMPACT_UNIT_FRAME_PROFILE_KEEPGROUPSTOGETHER", "Mantener al grupo junto")
 L("COMPACT_UNIT_FRAME_PROFILE_SORTBY", "Ordenar por:")
+L("COMPACT_UNIT_FRAME_PROFILE_SORTPLAYERFIRST", "Mantenerme arriba")
+L("CRF_SORT_PLAYER_FIRST_TOOLTIP", "Tu marco aparece siempre el primero, sea cual sea el orden. Con grupos separados: el primero de tu grupo.")
 L("COMPACT_UNIT_FRAME_PROFILE_SORTBY_ALPHABETICAL", "Alfabético")
 L("COMPACT_UNIT_FRAME_PROFILE_USECLASSCOLORS", "Mostrar color de clase")
 

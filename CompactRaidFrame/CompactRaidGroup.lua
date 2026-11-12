@@ -57,6 +57,7 @@ function CompactRaidGroup_InitializeForGroup(frame, groupIndex)
     frame.title:SetFormattedText(GROUP_NUMBER, groupIndex);
 end
 
+local groupMembers = {};
 function CompactRaidGroup_UpdateUnits(frame)
     local groupIndex = frame:GetID();
     local frameIndex = 1;
@@ -68,12 +69,23 @@ function CompactRaidGroup_UpdateUnits(frame)
             CompactUnitFrame_SetUnit(_G[frame:GetName().."Member"..i], (i <= count) and "player" or nil);
         end
     elseif ( IsInRaid() ) then
+        -- In raid order; with "Keep Me at the Top" the player first in their group.
+        local playerFirst = CompactRaidFrameManager_GetSetting and CompactRaidFrameManager_GetSetting("SortPlayerFirst");
+        playerFirst = playerFirst and playerFirst ~= "0";
+        wipe(groupMembers);
         for i=1, GetNumGroupMembers() do
             local name, rank, subgroup = GetRaidRosterInfo(i);
-            if ( subgroup == groupIndex and frameIndex <= MEMBERS_PER_RAID_GROUP ) then
-                CompactUnitFrame_SetUnit(_G[frame:GetName().."Member"..frameIndex], "raid"..i);
-                frameIndex = frameIndex + 1;
+            if ( subgroup == groupIndex ) then
+                if ( playerFirst and UnitIsUnit("raid"..i, "player") ) then
+                    tinsert(groupMembers, 1, "raid"..i);
+                else
+                    tinsert(groupMembers, "raid"..i);
+                end
             end
+        end
+        for i=1, min(#groupMembers, MEMBERS_PER_RAID_GROUP) do
+            CompactUnitFrame_SetUnit(_G[frame:GetName().."Member"..frameIndex], groupMembers[i]);
+            frameIndex = frameIndex + 1;
         end
 
         for i=frameIndex, MEMBERS_PER_RAID_GROUP do
