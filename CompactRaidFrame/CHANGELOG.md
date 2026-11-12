@@ -1,5 +1,17 @@
 # Compact Raid Frames (3.3.5a) - changelog
 
+## 1.26
+
+- Separate Groups (Horizontal) with Display Pets: each group's pets now go in
+  a row right under that group, before the next group (they were stacked in
+  one column at the left under the last group). If a group and its pets don't
+  fit at the bottom of the frames, they move to the next column together.
+- Where pets go in each layout (Display Pets on):
+  - Combine (Vertical): after the last player, down the column.
+  - Combine (Horizontal): after the last player, five to a row.
+  - Separate (Vertical): a column under each group (1.25).
+  - Separate (Horizontal): a row under each group.
+
 ## 1.25
 
 - Separate Groups (Vertical) with Display Pets: pets now sit under the players

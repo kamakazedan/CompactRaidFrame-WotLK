@@ -282,10 +282,53 @@ local function CompactRaidFrameContainer_GetGroupPets(self, id, pets)
     return pets;
 end
 
+-- "Separate Groups (Horizontal)": a group's pets go in one row right under
+-- the group. The flow stacks objects (groups) top to bottom there, so the row
+-- is a holder frame with the pet frames side by side in it; it goes into the
+-- flow together with its group (an atomic add, so they wrap to the next
+-- column together). Its pets are released with it when the layout is redone.
+local function CompactRaidFrameContainer_PetRow_Unused(row)
+    for i=1, #row.pets do
+        local petFrame = row.pets[i];
+        if ( petFrame.unusedFunc ) then
+            petFrame:unusedFunc();
+        end
+    end
+    wipe(row.pets);
+    row:Hide();
+end
+
+local function CompactRaidFrameContainer_AddPetRow(self, index, pets)
+    self.petRows = self.petRows or {};
+    local row = self.petRows[index];
+    if ( not row ) then
+        row = CreateFrame("Frame", nil, self);
+        row.pets = {};
+        row.unusedFunc = CompactRaidFrameContainer_PetRow_Unused;
+        self.petRows[index] = row;
+    end
+    wipe(row.pets);
+    local width, height = 0, 0;
+    for i=1, #pets do
+        local petFrame = CompactRaidFrameContainer_GetUnitFrame(self, pets[i], "pet");
+        CompactUnitFrame_SetUnit(petFrame, pets[i]);
+        petFrame:ClearAllPoints();
+        petFrame:SetPoint("TOPLEFT", row, "TOPLEFT", width, 0);
+        width = width + petFrame:GetWidth();
+        height = max(height, petFrame:GetHeight());
+        tinsert(row.pets, petFrame);
+    end
+    row:SetSize(max(width, 1), max(height, 1));
+    row:Show();
+    FlowContainer_AddObject(self, row);
+    return row;
+end
+
 do
     local usedGroups = {}; --Enclosure to make sure usedGroups isn't used anywhere else.
     local groupIDs, groupPets, groupFrames = {}, {}, {};
-    -- Returns true when it also placed the pets (under their groups).
+    -- With Display Pets, each group's pets go under that group (and the
+    -- function returns true: the pets are placed).
     function CompactRaidFrameContainer_AddGroups(self)
         wipe(groupIDs);
         if ( IsInRaid() ) then
@@ -300,20 +343,35 @@ do
             tinsert(groupIDs, "PARTY");
         end
 
-        -- Vertical groups (columns side by side) with pets: each group's pets
-        -- in a column under it. The groups go in line by line, breaking where
-        -- the flow would wrap anyway, and every line of groups is followed by
-        -- rows of pets: row k holds the k-th pet of each group, with spacers
-        -- for groups that have fewer, so each pet sits under its own group.
-        local petsUnderGroups = self.displayPets and not CUF_HORIZONTAL_GROUPS;
-        local spacing = self.flowHorizontalSpacing or 0;
-        local perLine;
-        local i = 1;
-        while ( i <= #groupIDs ) do
-            local groupFrame = CompactRaidFrameContainer_AddGroup(self, groupIDs[i]);
-            if ( not petsUnderGroups ) then
-                i = i + 1;
-            else
+        if ( not self.displayPets ) then
+            for i=1, #groupIDs do
+                CompactRaidFrameContainer_AddGroup(self, groupIDs[i]);
+            end
+        elseif ( CUF_HORIZONTAL_GROUPS ) then
+            -- Rows of groups, top to bottom: each group's pets in a row under it.
+            for i=1, #groupIDs do
+                groupPets[i] = groupPets[i] or {};
+                local pets = CompactRaidFrameContainer_GetGroupPets(self, groupIDs[i], groupPets[i]);
+                if ( #pets > 0 ) then
+                    FlowContainer_BeginAtomicAdd(self);
+                    CompactRaidFrameContainer_AddGroup(self, groupIDs[i]);
+                    CompactRaidFrameContainer_AddPetRow(self, i, pets);
+                    FlowContainer_EndAtomicAdd(self);
+                else
+                    CompactRaidFrameContainer_AddGroup(self, groupIDs[i]);
+                end
+            end
+        else
+            -- Columns of groups, side by side: each group's pets in a column
+            -- under it. The groups go in line by line, breaking where the flow
+            -- would wrap anyway, and every line of groups is followed by rows
+            -- of pets: row k holds the k-th pet of each group, with spacers
+            -- for groups that have fewer, so each pet sits under its own group.
+            local spacing = self.flowHorizontalSpacing or 0;
+            local perLine;
+            local i = 1;
+            while ( i <= #groupIDs ) do
+                local groupFrame = CompactRaidFrameContainer_AddGroup(self, groupIDs[i]);
                 local groupWidth = groupFrame:GetWidth();
                 if ( not perLine ) then
                     perLine = max(1, floor((self:GetWidth() - groupWidth) / (groupWidth + spacing)) + 1);
@@ -358,9 +416,8 @@ do
             end
         end
         CompactRaidFrameContainer_SetGroupsArrangement(self);
-        return petsUnderGroups;
+        return self.displayPets;
     end
-
 end
 
 -- "Separate Groups": vertical groups (columns of 5) are placed side by side;
