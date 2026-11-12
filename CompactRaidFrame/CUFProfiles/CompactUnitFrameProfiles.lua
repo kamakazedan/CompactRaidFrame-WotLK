@@ -1214,7 +1214,11 @@ CUFProfileActionTable = {
 	displayOnlyDispellableDebuffs = CompactUnitFrameProfiles_GenerateOptionSetter("displayOnlyDispellableDebuffs", "normal"),
 	useClassColors = CompactUnitFrameProfiles_GenerateOptionSetter("useClassColors", "normal"),
 	horizontalGroups = CompactUnitFrameProfiles_GenerateRaidManagerSetting("HorizontalGroups");
-	healthText = CompactUnitFrameProfiles_GenerateOptionSetter("healthText", "normal"),
+	healthText = function(value)
+								-- the text (frame option); with no text the auras keep their full size (setup option)
+								DefaultCompactUnitFrameOptions.healthText = value;
+								DefaultCompactUnitFrameSetupOptions.healthText = value;
+							end,
 	powerText = function(value)
 								-- the text (frame option) and the taller power bar (setup option)
 								DefaultCompactUnitFrameOptions.powerText = value;

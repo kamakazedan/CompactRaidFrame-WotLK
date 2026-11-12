@@ -1507,6 +1507,7 @@ local NATIVE_UNIT_FRAME_HEIGHT = 36;
 local NATIVE_UNIT_FRAME_WIDTH = 72;
 DefaultCompactUnitFrameSetupOptions = {
     displayPowerBar = true,
+    healthText = "none",
     powerText = "none",
     height = NATIVE_UNIT_FRAME_HEIGHT,
     width = NATIVE_UNIT_FRAME_WIDTH,
@@ -1539,6 +1540,76 @@ function CompactUnitFrame_GetOptionDisplayPowerBar(frame, options)
 end
 
 -- The parts of the frame layout that depend on whether the power bar is shown.
+-- The health bar is "the box": the role icon and name along its top, the
+-- health text in its middle, and the buffs / debuffs in a strip along its
+-- bottom, sized so none of them cover each other.
+--  * Health text: centred in the box, its size following the frame (at most a
+--    third of the box's height, and never into the name row).
+--  * Buffs / debuffs: fill the strip under the text, up to their original size
+--    (11 x the frame's scale). At most 3 of each, so they always fit side by
+--    side. With Display Health Text off they keep their original size.
+--  * Ready check and status icons: on the text.
+-- Frames too short for three rows keep the original arrangement: text low in
+-- the box, under the name, with the auras over it.
+-- Plain child frames, textures and font strings only: safe in combat.
+local CUF_NAME_ROW_HEIGHT = 15;    -- role icon / name / dispel icons, plus a 1px gap
+local CUF_TEXT_MIN_SIZE = 10;
+local function CompactUnitFrame_LayoutHealthArea(frame, options, powerBarUsedHeight)
+    local componentScale = min(options.height / NATIVE_UNIT_FRAME_HEIGHT, options.width / NATIVE_UNIT_FRAME_WIDTH);
+    local boxBottom, boxTop = 1 + powerBarUsedHeight, options.height - 1;   -- the health bar, from the frame's bottom
+    local boxCentre = (boxBottom + boxTop) / 2;
+    local room = options.height - powerBarUsedHeight;
+    local auraBottom = CUF_AURA_BOTTOM_OFFSET + powerBarUsedHeight;
+    local nameRowBottom = options.height - CUF_NAME_ROW_HEIGHT;
+    local originalAuraSize = 11 * componentScale;
+
+    local textSize = min(12 * componentScale, room * 0.33, room - 2 * CUF_NAME_ROW_HEIGHT);
+    local textCentre, auraSize;
+    if ( textSize >= CUF_TEXT_MIN_SIZE ) then
+        textCentre = boxCentre;
+        if ( options.healthText and options.healthText ~= "none" ) then
+            auraSize = min(originalAuraSize, textCentre - textSize / 2 - 1 - auraBottom);
+        else
+            auraSize = min(originalAuraSize, nameRowBottom - auraBottom);
+        end
+    else
+        textSize = min(12 * componentScale, max(CUF_TEXT_MIN_SIZE, room * 0.33));
+        textCentre = max(boxBottom + textSize / 2, min(boxCentre, nameRowBottom - textSize / 2));
+        auraSize = originalAuraSize;
+    end
+    local textOffset = textCentre - boxCentre;
+
+    if ( frame.statusText ) then
+        local fontName, _, fontFlags = frame.statusText:GetFont();
+        frame.statusText:SetFont(fontName, textSize, fontFlags);
+        frame.statusText:SetHeight(textSize);
+        frame.statusText:ClearAllPoints();
+        frame.statusText:SetPoint("LEFT", frame.healthBar, "LEFT", 2, textOffset);
+        frame.statusText:SetPoint("RIGHT", frame.healthBar, "RIGHT", -2, textOffset);
+    end
+
+    for i=1, #frame.buffFrames do
+        frame.buffFrames[i]:SetSize(auraSize, auraSize);
+    end
+    for i=1, #frame.debuffFrames do
+        frame.debuffFrames[i].baseSize = auraSize;
+        frame.debuffFrames[i].maxHeight = max(textCentre - textSize / 2 - 1 - auraBottom, auraSize);
+        frame.debuffFrames[i]:SetSize(auraSize, auraSize);
+    end
+
+    local centreIconSize = max(12, min(15 * componentScale, 2 * (nameRowBottom - textCentre)));
+    if ( frame.ignoreParentAlpha and frame.ignoreParentAlpha.readyCheckIcon ) then
+        frame.ignoreParentAlpha.readyCheckIcon:ClearAllPoints();
+        frame.ignoreParentAlpha.readyCheckIcon:SetPoint("CENTER", frame.healthBar, "CENTER", 0, textOffset);
+        frame.ignoreParentAlpha.readyCheckIcon:SetSize(centreIconSize, centreIconSize);
+    end
+    if ( frame.centerStatusIcon ) then
+        frame.centerStatusIcon:ClearAllPoints();
+        frame.centerStatusIcon:SetPoint("CENTER", frame.healthBar, "CENTER", 0, textOffset);
+        frame.centerStatusIcon:SetSize(centreIconSize, centreIconSize);
+    end
+end
+
 -- Only plain child frames and textures are touched (never the secure unit
 -- button itself), so unlike the full setup this may run in combat.
 local function CompactUnitFrame_LayoutPowerBar(frame, options, displayPowerBar)
@@ -1546,14 +1617,6 @@ local function CompactUnitFrame_LayoutPowerBar(frame, options, displayPowerBar)
     frame.powerBarDisplayed = displayPowerBar;
 
     frame.healthBar:SetPoint("BOTTOMRIGHT", frame, "BOTTOMRIGHT", -1, 1 + powerBarUsedHeight);
-
-    -- The health text sits a third of the way up; on short frames keep it
-    -- above a tall (text) power bar. Unchanged with the normal 8px bar.
-    if ( frame.statusText ) then
-        local statusTextOffset = max(options.height / 3 - 2, powerBarUsedHeight + 2);
-        frame.statusText:SetPoint("BOTTOMLEFT", frame, "BOTTOMLEFT", 3, statusTextOffset);
-        frame.statusText:SetPoint("BOTTOMRIGHT", frame, "BOTTOMRIGHT", -3, statusTextOffset);
-    end
 
     if ( frame.powerBar ) then
         if ( displayPowerBar ) then
@@ -1582,10 +1645,7 @@ local function CompactUnitFrame_LayoutPowerBar(frame, options, displayPowerBar)
         frame.debuffFrames[1]:ClearAllPoints();
         frame.debuffFrames[1]:SetPoint("BOTTOMLEFT", frame, "BOTTOMLEFT", 3, auraOffset);
     end
-    for i=1, #frame.debuffFrames do
-        frame.debuffFrames[i].maxHeight = max(options.height - powerBarUsedHeight - CUF_AURA_BOTTOM_OFFSET - CUF_NAME_SECTION_SIZE,
-            frame.debuffFrames[i].baseSize or 0);
-    end
+    CompactUnitFrame_LayoutHealthArea(frame, options, powerBarUsedHeight);
 
     if ( options.displayBorder and displayPowerBar ) then
         frame.horizDivider:ClearAllPoints();
@@ -1682,12 +1742,7 @@ function DefaultCompactUnitFrameSetup(frame)
     frame.name:SetPoint("TOPRIGHT", -3, -3);
     frame.name:SetJustifyH("LEFT");
 
-    local NATIVE_FONT_SIZE = 12;
-    local fontName, fontSize, fontFlags = frame.statusText:GetFont();
-    frame.statusText:SetFont(fontName, NATIVE_FONT_SIZE * componentScale, fontFlags);
-    frame.statusText:SetPoint("BOTTOMLEFT", frame, "BOTTOMLEFT", 3, options.height / 3 - 2);
-    frame.statusText:SetPoint("BOTTOMRIGHT", frame, "BOTTOMRIGHT", -3, options.height / 3 - 2);
-    frame.statusText:SetHeight(12 * componentScale);
+    -- health text: size and position from CompactUnitFrame_LayoutHealthArea
 
     -- "Display Power Bar Text": centred in the (16px) power bar.
     frame.powerText = frame.powerBar and frame.powerBar.powerText;
@@ -1701,13 +1756,7 @@ function DefaultCompactUnitFrameSetup(frame)
         frame.powerText:SetJustifyH("CENTER");
     end
 
-    local readyCheckSize = 15 * componentScale;
-    frame.ignoreParentAlpha.readyCheckIcon:ClearAllPoints();
-    frame.ignoreParentAlpha.readyCheckIcon:SetPoint("BOTTOM", frame, "BOTTOM", 0, options.height / 3 - 4);
-    frame.ignoreParentAlpha.readyCheckIcon:SetSize(readyCheckSize, readyCheckSize);
-
-    local buffSize = 11 * componentScale;
-
+    -- ready check icon, aura sizes, status icon: CompactUnitFrame_LayoutHealthArea
     CompactUnitFrame_SetMaxBuffs(frame, 3);
     CompactUnitFrame_SetMaxDebuffs(frame, 3);
     CompactUnitFrame_SetMaxDispelDebuffs(frame, 3);
@@ -1720,7 +1769,6 @@ function DefaultCompactUnitFrameSetup(frame)
             frame.buffFrames[i]:ClearAllPoints();
             frame.buffFrames[i]:SetPoint(buffPos, frame.buffFrames[i - 1], buffRelativePoint, 0, 0);
         end
-        frame.buffFrames[i]:SetSize(buffSize, buffSize);
         frame.buffFrames[i]:SetParent(frame.healthBar);
         frame.buffFrames[i]:SetFrameLevel(9);
     end
@@ -1733,9 +1781,6 @@ function DefaultCompactUnitFrameSetup(frame)
             frame.debuffFrames[i]:ClearAllPoints();
             frame.debuffFrames[i]:SetPoint(debuffPos, frame.debuffFrames[i - 1], debuffRelativePoint, 0, 0);
         end
-        frame.debuffFrames[i].baseSize = buffSize;
-        frame.debuffFrames[i].maxHeight = options.height - powerBarUsedHeight - CUF_AURA_BOTTOM_OFFSET - CUF_NAME_SECTION_SIZE;
-        frame.debuffFrames[i]:SetSize(11, 11);
         frame.debuffFrames[i]:SetParent(frame.healthBar);
         frame.debuffFrames[i]:SetFrameLevel(9);
     end
@@ -1757,9 +1802,6 @@ function DefaultCompactUnitFrameSetup(frame)
     frame.aggroHighlight:SetTexCoord(unpack(texCoords["Raid-AggroFrame"]));
     frame.aggroHighlight:SetAllPoints(frame);
 
-    frame.centerStatusIcon:ClearAllPoints();
-    frame.centerStatusIcon:SetPoint("CENTER", frame, "BOTTOM", 0, options.height / 3 + 2);
-    frame.centerStatusIcon:SetSize(buffSize * 2, buffSize * 2);
     frame.centerStatusIcon:SetParent(frame.healthBar);
 
     if ( options.displayBorder ) then

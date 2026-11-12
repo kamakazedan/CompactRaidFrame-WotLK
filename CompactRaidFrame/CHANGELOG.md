@@ -1,5 +1,22 @@
 # Compact Raid Frames (3.3.5a) - changelog
 
+## 1.23
+
+- The health text is centred in the frame's health bar ("the box"), with the
+  name above it and buffs / debuffs in a strip below it, so they no longer
+  cover each other.
+  - The text's size follows the frame but is at most a third of the box's
+    height, so at 50% / 50% with power bar text it is a little smaller than
+    before.
+  - Buffs and debuffs fill the strip under the text, up to their original
+    size. A frame shows at most 3 buffs and 3 debuffs (plus up to 3 small
+    dispel markers in the top right), so they always fit side by side.
+  - The ready check and status icons (phase, resurrection) sit on the text.
+  - With Display Health Text set to None, the auras keep their original size.
+  - Frames too short for three rows (e.g. 36px tall) keep the old arrangement.
+  - When a role change shows or hides a power bar in combat, everything
+    re-fits straight away.
+
 ## 1.22
 
 ### New option
