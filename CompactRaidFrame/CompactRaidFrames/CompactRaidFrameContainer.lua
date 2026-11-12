@@ -218,15 +218,16 @@ function CompactRaidFrameContainer_LayoutFrames(self)
             FlowContainer_AddLineBreak(self);
         end
 
+        local petsPlaced;
         if ( self.groupMode == "discrete" ) then
-            CompactRaidFrameContainer_AddGroups(self);
+            petsPlaced = CompactRaidFrameContainer_AddGroups(self);
         elseif ( self.groupMode == "flush" ) then
             CompactRaidFrameContainer_AddPlayers(self);
         else
             error("Unknown group mode");
         end
 
-        if ( self.displayPets ) then
+        if ( self.displayPets and not petsPlaced ) then
             CompactRaidFrameContainer_AddPets(self);
         end
     end
@@ -248,22 +249,116 @@ function CompactRaidFrameContainer_UpdateBorder(self)
     end
 end
 
+-- The pets of a group's members, in the group's order: in a party the
+-- player's pet, then party1's ... In a raid, raid order, with the player's pet
+-- first when "Keep Me at the Top" is on.
+local function CompactRaidFrameContainer_GetGroupPets(self, id, pets)
+    wipe(pets);
+    if ( id == "PARTY" ) then
+        if ( UnitExists("pet") ) then
+            tinsert(pets, "pet");
+        end
+        for i=1, GetNumSubgroupMembers() do
+            if ( UnitExists("partypet"..i) ) then
+                tinsert(pets, "partypet"..i);
+            end
+        end
+    else
+        local playerFirst = CompactRaidFrameManager_GetSetting and CompactRaidFrameManager_GetSetting("SortPlayerFirst");
+        playerFirst = playerFirst and playerFirst ~= "0";
+        local frameReservations = self.frameReservations["pet"];
+        for i=1, MAX_RAID_MEMBERS do
+            local unit = "raidpet"..i;
+            local _, _, subgroup = GetRaidRosterInfo(i);
+            if ( subgroup == id and (UnitExists(unit) or (PLAYER_ZONE_TYPE == "arena" and CompactRaidFrameContainer_PetInUse(frameReservations, unit))) ) then
+                if ( playerFirst and UnitIsUnit("raid"..i, "player") ) then
+                    tinsert(pets, 1, unit);
+                else
+                    tinsert(pets, unit);
+                end
+            end
+        end
+    end
+    return pets;
+end
+
 do
     local usedGroups = {}; --Enclosure to make sure usedGroups isn't used anywhere else.
+    local groupIDs, groupPets, groupFrames = {}, {}, {};
+    -- Returns true when it also placed the pets (under their groups).
     function CompactRaidFrameContainer_AddGroups(self)
-
+        wipe(groupIDs);
         if ( IsInRaid() ) then
             RaidUtil_GetUsedGroups(usedGroups);
 
             for groupNum, isUsed in ipairs(usedGroups) do
                 if ( isUsed and self.groupFilterFunc(groupNum) ) then
-                    CompactRaidFrameContainer_AddGroup(self, groupNum);
+                    tinsert(groupIDs, groupNum);
                 end
             end
         else
-            CompactRaidFrameContainer_AddGroup(self, "PARTY");
+            tinsert(groupIDs, "PARTY");
+        end
+
+        -- Vertical groups (columns side by side) with pets: each group's pets
+        -- in a column under it. The groups go in line by line, breaking where
+        -- the flow would wrap anyway, and every line of groups is followed by
+        -- rows of pets: row k holds the k-th pet of each group, with spacers
+        -- for groups that have fewer, so each pet sits under its own group.
+        local petsUnderGroups = self.displayPets and not CUF_HORIZONTAL_GROUPS;
+        local spacing = self.flowHorizontalSpacing or 0;
+        local perLine;
+        local i = 1;
+        while ( i <= #groupIDs ) do
+            local groupFrame = CompactRaidFrameContainer_AddGroup(self, groupIDs[i]);
+            if ( not petsUnderGroups ) then
+                i = i + 1;
+            else
+                local groupWidth = groupFrame:GetWidth();
+                if ( not perLine ) then
+                    perLine = max(1, floor((self:GetWidth() - groupWidth) / (groupWidth + spacing)) + 1);
+                end
+                local lineEnd = min(#groupIDs, i + perLine - 1);
+                wipe(groupFrames);
+                groupFrames[i] = groupFrame;
+                for j=i + 1, lineEnd do
+                    groupFrames[j] = CompactRaidFrameContainer_AddGroup(self, groupIDs[j]);
+                end
+                local rows = 0;
+                for j=i, lineEnd do
+                    groupPets[j] = groupPets[j] or {};
+                    CompactRaidFrameContainer_GetGroupPets(self, groupIDs[j], groupPets[j]);
+                    rows = max(rows, #groupPets[j]);
+                end
+                if ( rows > 0 or lineEnd < #groupIDs ) then
+                    FlowContainer_AddLineBreak(self);
+                end
+                for row=1, rows do
+                    for j=i, lineEnd do
+                        local width = groupFrames[j]:GetWidth();
+                        local unit = groupPets[j][row];
+                        if ( unit ) then
+                            -- centred under the group's members (a group with a border is wider)
+                            local petFrame = CompactRaidFrameContainer_GetUnitFrame(self, unit, "pet");
+                            local inset = max(0, (width - petFrame:GetWidth()) / 2);
+                            if ( inset > 0 ) then
+                                FlowContainer_AddSpacer(self, inset);
+                            end
+                            CompactRaidFrameContainer_AddUnitFrame(self, unit, "pet");
+                            if ( inset > 0 ) then
+                                FlowContainer_AddSpacer(self, inset);
+                            end
+                        else
+                            FlowContainer_AddSpacer(self, width + spacing);
+                        end
+                    end
+                    FlowContainer_AddLineBreak(self);
+                end
+                i = lineEnd + 1;
+            end
         end
         CompactRaidFrameContainer_SetGroupsArrangement(self);
+        return petsUnderGroups;
     end
 
 end

@@ -1,5 +1,19 @@
 # Compact Raid Frames (3.3.5a) - changelog
 
+## 1.25
+
+- Separate Groups (Vertical) with Display Pets: pets now sit under the players
+  instead of off to the right.
+  - In a party: a column of pets under the party (your pet first, then the
+    party members' pets in order).
+  - In a raid: each group's pets in a column under that group (your pet first
+    in your group with Keep Me at the Top). When the groups take more than one
+    line, each line has its pets right under it.
+  - Lined up with the members, also with Display Border on.
+- Other layouts are unchanged: in Combine Groups (Vertical) the pets already
+  carry on under the last player; in the horizontal layouts they follow the
+  groups as before.
+
 ## 1.24
 
 - New Layout tab option **Keep Me at the Top** (next to Display Border, under
