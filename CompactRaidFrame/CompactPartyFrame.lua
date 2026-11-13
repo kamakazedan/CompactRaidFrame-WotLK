@@ -65,6 +65,7 @@ function CompactPartyFrame_UpdateUnits(frame)
             CompactUnitFrame_SetUnit(unitFrame, partyMembers[i]);
         end
     end
+    CompactRaidGroup_UpdateClassBarRoom(frame);     -- room under you for totem / rune boxes
 end
 
 function CompactPartyFrame_Generate()

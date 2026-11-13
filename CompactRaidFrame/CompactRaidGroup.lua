@@ -108,6 +108,7 @@ function CompactRaidGroup_UpdateUnits(frame)
             end
         end
     end
+    CompactRaidGroup_UpdateClassBarRoom(frame);
 end
 
 -- A group frame is as long as the members it shows (not always 5), so its
@@ -123,11 +124,46 @@ function CompactRaidGroup_SetShownMembers(frame, count)
     end
 end
 
+-- Your totem / rune boxes (CRFClassBar.lua) go under your frame: which member
+-- shows you, and the room they need after it (nil, 0 for no boxes).
+function CompactRaidGroup_FindClassBarMember(frame)
+    if ( not CRF_GetClassBarRoom ) then
+        return nil, 0;
+    end
+    local name = frame:GetName();
+    local frame1 = _G[name.."Member1"];
+    local room = CRF_GetClassBarRoom(frame1:GetWidth(), frame1:GetHeight());
+    if ( room > 0 ) then
+        for i=1, CompactRaidGroup_GetShownMembers(frame) do
+            if ( CRF_IsClassBarUnit(_G[name.."Member"..i].unit, i == 1 and frame:GetID() == 1) ) then
+                return i, room;
+            end
+        end
+    end
+    return nil, 0;
+end
+
+-- After new units: lay out again if the member with the room changed.
+-- (Out of combat, as the units were.)
+function CompactRaidGroup_UpdateClassBarRoom(frame)
+    local member, room = CompactRaidGroup_FindClassBarMember(frame);
+    if ( member ~= frame.classBarMember or room ~= (frame.classBarRoom or 0) ) then
+        CompactRaidGroup_UpdateLayout(frame);
+    end
+end
+
 function CompactRaidGroup_UpdateLayout(frame)
     -- No room for a hidden title (the party frame hides "Party" when solo).
     local titleHeight = frame.title:IsShown() and frame.title:GetHeight() or 0;
     local totalHeight = titleHeight;
     local totalWidth = 0;
+    -- Room under your frame for your totem / rune boxes: in a column the
+    -- members after you move down, in a row the row is taller.
+    local barMember, barRoom = CompactRaidGroup_FindClassBarMember(frame);
+    frame.classBarMember, frame.classBarRoom = barMember, barRoom;
+    for i=1, MEMBERS_PER_RAID_GROUP do
+        _G[frame:GetName().."Member"..i].crfClassBarRoom = (i == barMember) and barRoom or nil;
+    end
     if ( CUF_HORIZONTAL_GROUPS ) then
         frame.title:ClearAllPoints();
         frame.title:SetPoint("TOPLEFT");
@@ -141,7 +177,7 @@ function CompactRaidGroup_UpdateLayout(frame)
             unitFrame:ClearAllPoints();
             unitFrame:SetPoint("LEFT", _G[frame:GetName().."Member"..(i-1)], "RIGHT", 0, 0);
         end
-        totalHeight = totalHeight + _G[frame:GetName().."Member1"]:GetHeight();
+        totalHeight = totalHeight + _G[frame:GetName().."Member1"]:GetHeight() + barRoom;
         totalWidth = totalWidth + _G[frame:GetName().."Member1"]:GetWidth() * CompactRaidGroup_GetShownMembers(frame);
     else
         frame.title:ClearAllPoints();
@@ -154,9 +190,9 @@ function CompactRaidGroup_UpdateLayout(frame)
         for i=2, MEMBERS_PER_RAID_GROUP do
             local unitFrame = _G[frame:GetName().."Member"..i];
             unitFrame:ClearAllPoints();
-            unitFrame:SetPoint("TOP", _G[frame:GetName().."Member"..(i-1)], "BOTTOM", 0, 0);
+            unitFrame:SetPoint("TOP", _G[frame:GetName().."Member"..(i-1)], "BOTTOM", 0, (i - 1 == barMember) and -barRoom or 0);
         end
-        totalHeight = totalHeight + _G[frame:GetName().."Member1"]:GetHeight() * CompactRaidGroup_GetShownMembers(frame);
+        totalHeight = totalHeight + _G[frame:GetName().."Member1"]:GetHeight() * CompactRaidGroup_GetShownMembers(frame) + barRoom;
         totalWidth = totalWidth + _G[frame:GetName().."Member1"]:GetWidth();
     end
 

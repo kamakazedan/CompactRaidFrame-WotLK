@@ -1,5 +1,31 @@
 # Compact Raid Frames (3.3.5a) - changelog
 
+## 1.28
+
+- Totem timers and Death Knight runes no longer float where the hidden player
+  frame used to be, on top of the raid frames. While "Hide player frame when
+  raid frames are shown" is on, they hide with the player frame, and a row of
+  small boxes right under your own raid frame shows them instead:
+  - Shamans: earth, fire, water and air, in the totem bar's order. A totem's
+    box shows its icon, a sweep and the time left (minutes, then seconds);
+    right-click destroys that totem, as on the player frame. An empty slot is
+    a dim box in its element's colour.
+  - Death Knights: the six runes in the player frame's order (blood, frost,
+    unholy). A used rune dims and fills back up from the bottom as it
+    returns; a death rune turns purple. A seventh box shows a temporary
+    ghoul with its time left.
+  - Hover a box for the totem's tooltip or the rune's type.
+- The players after yours move down to make room for the boxes (in rows, your
+  row is taller). Frames can't move during combat, so the room stays even
+  with no totems down. This works in all four group layouts, with pets, with
+  any Sort By and Keep Me at the Top setting, and in the raid size preview
+  (under the first placeholder).
+- The boxes size with your frames (16 px at the default frame size, from
+  about 8 px on the smallest frames to 23 px on the largest) and always fit
+  across your frame.
+- Other classes, and Hide Player Frame off, are unchanged: no boxes, no room,
+  and the player frame keeps its own totems and runes.
+
 ## 1.27
 
 - Separate Groups: pets now sit right under the last player of their group.

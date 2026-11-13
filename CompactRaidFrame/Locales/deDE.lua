@@ -71,7 +71,7 @@ L("COMPACT_UNIT_FRAME_PROFILE_DISPLAYHEALPREDICTION", "Eingehende Heilung anzeig
 L("COMPACT_UNIT_FRAME_PROFILE_DISPLAYONLYHEALERPOWERBARS", "Nur Ressourcenbalken von Heilern")
 L("CRF_REQUIRES_POWER_BARS", "Erfordert \"Ressourcenbalken anzeigen\".")
 L("CRF_HIDE_PLAYER_FRAME", "Spielerfenster bei Schlachtzugsfenstern ausblenden")
-L("CRF_HIDE_PLAYER_FRAME_TOOLTIP", "Blendet Euer Spielerfenster aus, solange die Schlachtzugsfenster angezeigt werden, da Euer eigenes Schlachtzugsfenster dasselbe zeigt. In Fahrzeugen bleibt es sichtbar, und Totem-Timer sowie Todesritter-Runen bleiben auf dem Bildschirm. Das Begleiterfenster gehört zum Spielerfenster und wird mit ausgeblendet: Aktiviert \"Begleiter anzeigen\", um Euren Begleiter in den Schlachtzugsfenstern zu sehen.")
+L("CRF_HIDE_PLAYER_FRAME_TOOLTIP", "Blendet Euer Spielerfenster aus, solange die Schlachtzugsfenster angezeigt werden, da Euer eigenes Schlachtzugsfenster dasselbe zeigt. In Fahrzeugen bleibt es sichtbar. Totem-Timer (oder die Runen eines Todesritters) erscheinen stattdessen als kleine Kästchen unter Eurem eigenen Schlachtzugsfenster. Das Begleiterfenster gehört zum Spielerfenster und wird mit ausgeblendet: Aktiviert \"Begleiter anzeigen\", um Euren Begleiter in den Schlachtzugsfenstern zu sehen.")
 L("CRF_OPTIONS_TAB_LAYOUT", "Anordnung")
 L("CRF_GROUPS", "Gruppen")
 L("CRF_GROUPS_COMBINE_VERTICAL", "Gruppen vereint (vertikal)")

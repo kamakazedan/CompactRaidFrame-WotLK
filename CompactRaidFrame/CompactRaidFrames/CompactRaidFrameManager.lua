@@ -404,40 +404,14 @@ function CRF_UpdatePlayerFrameVisibility()
         PlayerFrame:Show();
         playerFrameDriven = nil;
     end
-end
-
--- Totem timers and Death Knight runes are children of the player frame. While
--- it is hidden for the raid frames they move to UIParent (same place on
--- screen) and go back when it shows. Neither is a secure frame, so this also
--- works when the player frame hides or shows in combat.
-local CLASS_BARS = { "TotemFrame", "RuneFrame" };
-local function CompactRaidFrameManager_KeepClassBars(playerFrameShown)
-    for _, name in ipairs(CLASS_BARS) do
-        local bar = _G[name];
-        if ( bar ) then
-            if ( playerFrameShown ) then
-                if ( bar.crfReparented ) then
-                    bar:SetParent(PlayerFrame);
-                    bar.crfReparented = nil;
-                end
-            elseif ( bar:GetParent() == PlayerFrame ) then
-                bar:SetParent(UIParent);
-                bar.crfReparented = true;
-            end
-        end
+    -- room under your raid frame for your totem / rune boxes, or none
+    if ( CRF_UpdateClassBarRoom ) then
+        CRF_UpdateClassBarRoom();
     end
 end
 
-if ( PlayerFrame ) then
-    PlayerFrame:HookScript("OnHide", function()
-        if ( playerFrameDriven ) then
-            CompactRaidFrameManager_KeepClassBars(false);
-        end
-    end);
-    PlayerFrame:HookScript("OnShow", function()
-        CompactRaidFrameManager_KeepClassBars(true);
-    end);
-end
+-- Totem timers and Death Knight runes are part of the player frame and hide
+-- with it; your raid frame gets a row of boxes for them (CRFClassBar.lua).
 
 function CompactRaidFrameManager_UpdateShown(self)
     if ( InCombatLockdown() ) then

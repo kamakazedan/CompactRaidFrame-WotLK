@@ -237,6 +237,11 @@ function CompactRaidFrameContainer_LayoutFrames(self)
     CompactRaidFrameContainer_UpdateBorder(self);
 
     CompactRaidFrameContainer_ReleaseAllReservedFrames(self);
+
+    -- your totem / rune boxes go under your frame, in the room left for them
+    if ( CRF_UpdateClassBar ) then
+        CRF_UpdateClassBar();
+    end
 end
 
 function CompactRaidFrameContainer_UpdateBorder(self)
@@ -477,6 +482,51 @@ function CompactRaidFrameContainer_PrepareGroup(self, id)
     return groupFrame;
 end
 
+-- "Combine Groups": your frame with room under it for your totem / rune boxes
+-- (CRFClassBar.lua) goes into the flow as one object, a holder with your frame
+-- at its top. So the frames after yours move down (in rows of 5, the row is
+-- taller), and frame and room wrap to the next column together. Your frame is
+-- released with the holder when the layout is redone.
+local function CompactRaidFrameContainer_ClassBarHolder_Unused(holder)
+    local unitFrame = holder.unitFrame;
+    if ( unitFrame ) then
+        unitFrame.crfClassBarRoom = nil;
+        if ( unitFrame.unusedFunc ) then
+            unitFrame:unusedFunc();
+        end
+    end
+    holder.unitFrame = nil;
+    holder:Hide();
+end
+
+-- A member's frame into the flow (first: the first placeholder of a preview).
+local function CompactRaidFrameContainer_AddMemberFrame(self, mapping, unit, first)
+    local frame = CompactRaidFrameContainer_GetUnitFrame(self, mapping, "raid");
+    CompactUnitFrame_SetUnit(frame, unit);
+    local room = 0;
+    if ( CRF_IsClassBarUnit and CRF_IsClassBarUnit(unit, first) ) then
+        room = CRF_GetClassBarRoom(frame:GetWidth(), frame:GetHeight());
+    end
+    if ( room <= 0 ) then
+        FlowContainer_AddObject(self, frame);
+        return frame;
+    end
+    local holder = self.classBarHolder;
+    if ( not holder ) then
+        holder = CreateFrame("Frame", nil, self);
+        holder.unusedFunc = CompactRaidFrameContainer_ClassBarHolder_Unused;
+        self.classBarHolder = holder;
+    end
+    frame:ClearAllPoints();
+    frame:SetPoint("TOPLEFT", holder, "TOPLEFT", 0, 0);
+    frame.crfClassBarRoom = room;
+    holder.unitFrame = frame;
+    holder:SetSize(frame:GetWidth(), frame:GetHeight() + room);
+    holder:Show();
+    FlowContainer_AddObject(self, holder);
+    return frame;
+end
+
 function CompactRaidFrameContainer_AddPlayers(self)
     --First, sort the players we're going to use
     assert(self.flowSortFunc);  --No sort function defined! Call CompactRaidFrameContainer_SetFlowSortFunction.
@@ -487,7 +537,7 @@ function CompactRaidFrameContainer_AddPlayers(self)
     for i=1, #self.units do
         local unit = self.units[i];
         if ( self.flowFilterFunc(unit) ) then
-            CompactRaidFrameContainer_AddUnitFrame(self, unit, "raid");
+            CompactRaidFrameContainer_AddMemberFrame(self, unit, unit);
         end
     end
 
@@ -507,9 +557,7 @@ function CompactRaidFrameContainer_AddPreview(self, size)
         for i = 1, size do
             -- one reservation per placeholder ("preview1", ...) so each gets
             -- its own frame although they all show the same unit
-            local frame = CompactRaidFrameContainer_GetUnitFrame(self, "preview"..i, "raid");
-            CompactUnitFrame_SetUnit(frame, "player");
-            FlowContainer_AddObject(self, frame);
+            CompactRaidFrameContainer_AddMemberFrame(self, "preview"..i, "player", i == 1);
         end
         CompactRaidFrameContainer_SetPlayersArrangement(self);
     end

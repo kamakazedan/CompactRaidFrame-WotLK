@@ -72,7 +72,7 @@ L("COMPACT_UNIT_FRAME_PROFILE_DISPLAYHEALPREDICTION", "Mostrar sanación entrant
 L("COMPACT_UNIT_FRAME_PROFILE_DISPLAYONLYHEALERPOWERBARS", "Solo barras de poder de sanadores")
 L("CRF_REQUIRES_POWER_BARS", "Requiere \"Mostrar barras de poder\".")
 L("CRF_HIDE_PLAYER_FRAME", "Ocultar marco de jugador con los marcos de banda")
-L("CRF_HIDE_PLAYER_FRAME_TOOLTIP", "Oculta tu marco de jugador mientras se muestran los marcos de banda, ya que tu propio marco de banda muestra lo mismo. Sigue visible en vehículos, y los temporizadores de tótems y las runas de caballero de la Muerte siguen en pantalla. El marco de mascota forma parte del marco de jugador y se oculta con él: activa \"Mostrar mascotas\" para ver tu mascota en los marcos de banda.")
+L("CRF_HIDE_PLAYER_FRAME_TOOLTIP", "Oculta tu marco de jugador mientras se muestran los marcos de banda, ya que tu propio marco de banda muestra lo mismo. Sigue visible en vehículos. Los temporizadores de tótems (o las runas de un caballero de la Muerte) aparecen en su lugar como pequeñas casillas bajo tu propio marco de banda. El marco de mascota forma parte del marco de jugador y se oculta con él: activa \"Mostrar mascotas\" para ver tu mascota en los marcos de banda.")
 L("CRF_OPTIONS_TAB_LAYOUT", "Disposición")
 L("CRF_GROUPS", "Grupos")
 L("CRF_GROUPS_COMBINE_VERTICAL", "Grupos juntos (vertical)")
