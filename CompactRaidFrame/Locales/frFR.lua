@@ -72,7 +72,7 @@ L("COMPACT_UNIT_FRAME_PROFILE_DISPLAYHEALPREDICTION", "Afficher les soins entran
 L("COMPACT_UNIT_FRAME_PROFILE_DISPLAYONLYHEALERPOWERBARS", "Barres d'énergies des soigneurs seuls")
 L("CRF_REQUIRES_POWER_BARS", "Nécessite \"Barres d'énergies\".")
 L("CRF_HIDE_PLAYER_FRAME", "Masquer le cadre du joueur avec les cadres de raid")
-L("CRF_HIDE_PLAYER_FRAME_TOOLTIP", "Masque votre cadre de joueur tant que les cadres de raid sont affichés, puisque votre propre cadre de raid montre la même chose. Il reste visible dans les véhicules. Les délais des totems (ou les runes d'un chevalier de la mort) s'affichent à la place en petites cases sous votre propre cadre de raid. Le cadre du familier fait partie du cadre du joueur et est masqué avec lui : cochez \"Familiers\" pour voir votre familier dans les cadres de raid.")
+L("CRF_HIDE_PLAYER_FRAME_TOOLTIP", "Masque votre cadre de joueur tant que les cadres de raid sont affichés, puisque votre propre cadre de raid montre la même chose. Il reste visible dans les véhicules. À la place, de petites cases juste sous votre propre cadre de raid montrent vos totems (ou les runes d'un chevalier de la mort) tant qu'ils sont utilisés. Le cadre du familier fait partie du cadre du joueur et est masqué avec lui : cochez \"Familiers\" pour voir votre familier dans les cadres de raid.")
 L("CRF_OPTIONS_TAB_LAYOUT", "Disposition")
 L("CRF_GROUPS", "Groupes")
 L("CRF_GROUPS_COMBINE_VERTICAL", "Groupes réunis (vertical)")

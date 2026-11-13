@@ -3,24 +3,24 @@
 --
 -- Blizzard shows totem timers (shamans; also a Death Knight's temporary ghoul)
 -- and Death Knight runes on the player frame, so they go when "Hide Player
--- Frame" hides it (CRF_IsHidePlayerFrameEnabled). Instead, a row of small
--- boxes sits right under your own raid frame, and the frames after yours make
--- room for it (CompactRaidGroup_UpdateLayout, CompactRaidFrameContainer.lua):
---   Shamans: earth, fire, water and air, in the totem bar's order. A totem's
---     box shows its icon and the time left; right-click destroys the totem,
---     as on the player frame. An empty slot is a dim box in its element's
---     colour.
+-- Frame" hides it (CRF_IsHidePlayerFrameEnabled). Instead, small boxes sit
+-- right under your own raid frame, touching it and each other, and the frames
+-- after yours make room for them (CompactRaidGroup_UpdateLayout,
+-- CompactRaidFrameContainer.lua):
+--   Shamans: a box for each totem that is down, from the left in the totem
+--     bar's order (earth, fire, water, air): its icon, a sweep and the time
+--     left. Right-click destroys the totem, as on the player frame.
 --   Death Knights: the six runes in the player frame's order (blood, frost,
 --     unholy; a death rune turns purple). A used rune dims and fills back up
 --     from the bottom as it returns. A seventh box shows a temporary ghoul.
--- Unit frames can't move in combat, so the room stays even with no totem down.
--- The boxes are plain frames and update in combat.
+-- Boxes and room are only there while something shows: a totem down, a rune
+-- coming back, a ghoul up. Unit frames can't move in combat, so the room is
+-- also made as combat starts (the last moment they can move) and kept until
+-- it ends. The raid size preview shows every box, empty ones dim, to see how
+-- big they are. The boxes themselves are plain frames and update in combat.
 --========================================================================--
 
-local BOX_SPACING = 2;      -- between boxes
-local GHOUL_GAP = 4;        -- between the runes and the ghoul's box
-local PADDING = 2;          -- above and below the boxes
-local INSET = 1;            -- from your frame's left (and right) edge
+local TIMER_MIN_BOX = 14;   -- smaller boxes (the smallest frames) show the sweep but no time
 
 -- The totem bar's order (SHAMAN_TOTEM_PRIORITIES): earth, fire, water, air.
 local EARTH, FIRE, WATER, AIR = EARTH_TOTEM_SLOT or 2, FIRE_TOTEM_SLOT or 1, WATER_TOTEM_SLOT or 3, AIR_TOTEM_SLOT or 4;
@@ -31,7 +31,8 @@ local TOTEM_COLORS = {
     [WATER] = { 0.25, 0.60, 1.00 },
     [AIR]   = { 0.75, 0.75, 1.00 },
 };
-local EMPTY_ALPHA = 0.3;
+local GHOUL_COLOR = { 0.60, 0.60, 0.60 };
+local EMPTY_ALPHA = 0.3;    -- preview placeholders
 
 -- The player frame's rune order: blood, blood, frost, frost, unholy, unholy
 -- (runes 1-2 are blood, 3-4 unholy, 5-6 frost).
@@ -45,8 +46,11 @@ local CHARGE_ALPHA = 0.75;
 local GHOUL_BOX = 7;
 
 --------------------------------------------------------------------------
--- Who gets boxes, and how much room they need
+-- Who gets boxes, when, and how much room they need
 --------------------------------------------------------------------------
+local roomKind;     -- the kind of boxes the layouts make room for (false: none; nil before the first update)
+local combatRoom;   -- combat has started: the room stays until it ends
+
 local function CRFClassBar_GetClassKind()
     local _, class = UnitClass("player");
     if ( class == "SHAMAN" ) then
@@ -64,24 +68,46 @@ local function CRFClassBar_GetKind()
     end
 end
 
--- Boxes sized like the frame's other parts, all fitting across the frame.
-local function CRFClassBar_GetBoxSize(kind, width, height)
-    local count, gaps = 4, 3 * BOX_SPACING;
-    if ( kind == "RUNES" ) then
-        count, gaps = 7, 5 * BOX_SPACING + GHOUL_GAP;
-    end
-    local componentScale = min(height / 36, width / 72);
-    return max(4, floor(min(9 * componentScale, (width - 2 * INSET - gaps) / count)));
+local function CRFClassBar_InPreview()
+    return CRF_GetRaidPreviewSize and CRF_GetRaidPreviewSize();
 end
 
--- Room (height) the boxes need under a unit frame of this size; 0 when there
--- are none (other classes, or Hide Player Frame off).
+-- Anything to show: a totem (or a ghoul) up, or a rune coming back.
+local function CRFClassBar_IsInUse(kind, now)
+    for slot=1, MAX_TOTEMS or 4 do
+        local haveTotem, _, startTime, duration = GetTotemInfo(slot);
+        if ( haveTotem and duration and duration > 0 and startTime + duration > now ) then
+            return true;
+        end
+    end
+    if ( kind == "RUNES" ) then
+        for rune=1, 6 do
+            local _, _, ready = GetRuneCooldown(rune);
+            if ( not ready ) then
+                return true;
+            end
+        end
+    end
+    return false;
+end
+
+-- Square boxes sized with the frame (20px at the default size), touching, all
+-- of them fitting across it.
+local function CRFClassBar_GetBoxSize(kind, width, height)
+    local count = (kind == "RUNES") and GHOUL_BOX or #TOTEM_SLOTS;
+    local componentScale = min(height / 36, width / 72);
+    return max(4, floor(min(9 * componentScale + 4, width / count)));
+end
+
+-- Room (height) the boxes need under a unit frame of this size: as tall as a
+-- box. 0 while they're not shown (nothing up, other classes, Hide Player
+-- Frame off).
 function CRF_GetClassBarRoom(width, height)
     local kind = CRFClassBar_GetKind();
-    if ( not kind or not width or not height or width <= 0 or height <= 0 ) then
+    if ( not kind or not (roomKind == kind or CRFClassBar_InPreview()) or not width or not height or width <= 0 or height <= 0 ) then
         return 0;
     end
-    return CRFClassBar_GetBoxSize(kind, width, height) + 2 * PADDING;
+    return CRFClassBar_GetBoxSize(kind, width, height);
 end
 
 -- Whether the boxes go under the frame showing this unit: yours. In a raid
@@ -90,7 +116,7 @@ function CRF_IsClassBarUnit(unit, first)
     if ( not unit or not CRFClassBar_GetKind() or not UnitIsUnit(unit, "player") ) then
         return false;
     end
-    if ( CRF_GetRaidPreviewSize and CRF_GetRaidPreviewSize() ) then
+    if ( CRFClassBar_InPreview() ) then
         return first and true or false;
     end
     return true;
@@ -104,6 +130,9 @@ bar:Hide();
 bar.boxes = {};
 
 local function CRFClassBar_FormatTime(timeLeft)
+    if ( not bar.showTimers ) then
+        return "";
+    end
     if ( timeLeft >= 60 ) then
         return format("%dm", ceil(timeLeft / 60));
     end
@@ -153,7 +182,7 @@ local function CRFClassBar_CreateBox()
     edge:SetAllPoints(box);
     edge:SetTexture(0, 0, 0, 0.85);
 
-    box.fill = box:CreateTexture(nil, "BORDER");        -- element / rune colour
+    box.fill = box:CreateTexture(nil, "BORDER");        -- rune / placeholder colour
     CRFClassBar_SetInset(box.fill, box);
     box.fill:SetTexture(1, 1, 1);
 
@@ -205,7 +234,6 @@ local function CRFClassBar_SetKind(kind)
             box.cooldown:Hide();
             box.charge:Hide();
             box.timer:SetText("");
-            box:Show();
         elseif ( box ) then
             box:Hide();
         end
@@ -214,44 +242,62 @@ local function CRFClassBar_SetKind(kind)
 end
 
 local function CRFClassBar_SetBoxSize(size)
+    for i=1, bar.count do
+        local box = bar.boxes[i];
+        box:SetSize(size, size);
+        local fontFile = box.timer:GetFont();
+        box.timer:SetFont(fontFile, max(7, floor(size * 0.55 + 0.5)), "OUTLINE");
+    end
+    bar:SetHeight(size);
+    bar.boxSize = size;
+    bar.showTimers = size >= TIMER_MIN_BOX;
+end
+
+-- The boxes in use side by side from your frame's left edge, touching.
+local function CRFClassBar_Arrange()
     local x = 0;
     for i=1, bar.count do
         local box = bar.boxes[i];
-        if ( i > 1 ) then
-            x = x + (box.isGhoul and GHOUL_GAP or BOX_SPACING);
+        if ( box:IsShown() ) then
+            box:ClearAllPoints();
+            box:SetPoint("TOPLEFT", bar, "TOPLEFT", x, 0);
+            x = x + bar.boxSize;
         end
-        box:ClearAllPoints();
-        box:SetPoint("TOPLEFT", bar, "TOPLEFT", x, 0);
-        box:SetSize(size, size);
-        local fontFile = box.timer:GetFont();
-        box.timer:SetFont(fontFile, max(6, floor(size * 0.55 + 0.5)), "OUTLINE");
-        x = x + size;
     end
-    bar:SetSize(x, size);
-    bar.boxSize = size;
+    bar:SetWidth(max(x, 1));
 end
 
--- A totem's icon, sweep and time left; an empty slot dims to its colour.
-local function CRFClassBar_UpdateTotemBox(box, slot, now)
-    local haveTotem, _, startTime, duration, icon = GetTotemInfo(slot);
-    local expires = (haveTotem and duration and duration > 0) and (startTime + duration) or 0;
-    if ( expires > now ) then
-        box.active, box.expires = true, expires;
-        box.icon:SetTexture(icon);
-        box.icon:Show();
-        box.cooldown:SetCooldown(startTime, duration);
-        box.cooldown:Show();
-        box.timer:SetText(CRFClassBar_FormatTime(expires - now));
-        return true;
-    end
+-- An empty box: gone, except as a dim placeholder in the preview.
+local function CRFClassBar_SetEmpty(box, color, preview)
     box.active, box.expires = nil, nil;
     box.icon:Hide();
     box.cooldown:Hide();
     box.timer:SetText("");
-    local color = TOTEM_COLORS[slot] or TOTEM_COLORS[EARTH];
-    box.fill:SetVertexColor(color[1], color[2], color[3]);
-    box.fill:SetAlpha(EMPTY_ALPHA);
-    return false;
+    if ( preview ) then
+        box.fill:SetVertexColor(color[1], color[2], color[3]);
+        box.fill:SetAlpha(EMPTY_ALPHA);
+        box:Show();
+    else
+        box:Hide();
+    end
+end
+
+-- A totem's icon, sweep and time left.
+local function CRFClassBar_UpdateTotemBox(box, slot, now, preview, color)
+    local haveTotem, _, startTime, duration, icon = GetTotemInfo(slot);
+    local expires = (haveTotem and duration and duration > 0) and (startTime + duration) or 0;
+    if ( expires <= now ) then
+        CRFClassBar_SetEmpty(box, color or TOTEM_COLORS[slot] or GHOUL_COLOR, preview);
+        return false;
+    end
+    box.active, box.expires = true, expires;
+    box.icon:SetTexture(icon);
+    box.icon:Show();
+    box.cooldown:SetCooldown(startTime, duration);
+    box.cooldown:Show();
+    box.timer:SetText(CRFClassBar_FormatTime(expires - now));
+    box:Show();
+    return true;
 end
 
 local function CRFClassBar_UpdateCharge(box, now)
@@ -271,6 +317,7 @@ local function CRFClassBar_UpdateRuneBox(box, now)
     local color = RUNE_COLORS[GetRuneType(box.rune) or 0] or RUNE_COLORS[1];
     box.fill:SetVertexColor(color[1], color[2], color[3]);
     box.charge:SetVertexColor(color[1], color[2], color[3]);
+    box:Show();
     if ( ready or not (start and duration and duration > 0) ) then
         box.recharging = nil;
         box.fill:SetAlpha(1);
@@ -284,17 +331,16 @@ local function CRFClassBar_UpdateRuneBox(box, now)
 end
 
 -- A Death Knight's temporary ghoul (or whatever else is in a totem slot).
-local function CRFClassBar_UpdateGhoulBox(box, now)
+local function CRFClassBar_UpdateGhoulBox(box, now, preview)
     for slot=1, MAX_TOTEMS or 4 do
         local haveTotem, _, startTime, duration = GetTotemInfo(slot);
         if ( haveTotem and duration and duration > 0 and startTime + duration > now ) then
             box.totemSlot = slot;
-            box:Show();
-            return CRFClassBar_UpdateTotemBox(box, slot, now);
+            return CRFClassBar_UpdateTotemBox(box, slot, now, preview, GHOUL_COLOR);
         end
     end
-    box.totemSlot, box.active, box.expires = nil, nil, nil;
-    box:Hide();
+    box.totemSlot = nil;
+    CRFClassBar_SetEmpty(box, GHOUL_COLOR, preview);
     return false;
 end
 
@@ -304,7 +350,7 @@ local function CRFClassBar_Update()
     if ( not bar.kind ) then
         return;
     end
-    local now = GetTime();
+    local now, preview = GetTime(), CRFClassBar_InPreview();
     local ticking = false;
     for i=1, bar.count do
         local box = bar.boxes[i];
@@ -312,12 +358,13 @@ local function CRFClassBar_Update()
         if ( box.rune ) then
             boxTicking = CRFClassBar_UpdateRuneBox(box, now);
         elseif ( box.isGhoul ) then
-            boxTicking = CRFClassBar_UpdateGhoulBox(box, now);
+            boxTicking = CRFClassBar_UpdateGhoulBox(box, now, preview);
         else
-            boxTicking = CRFClassBar_UpdateTotemBox(box, box.totemSlot, now);
+            boxTicking = CRFClassBar_UpdateTotemBox(box, box.totemSlot, now, preview);
         end
         ticking = ticking or boxTicking;
     end
+    CRFClassBar_Arrange();
     bar.elapsed = 0;
     bar:SetScript("OnUpdate", ticking and CRFClassBar_OnUpdate or nil);
 end
@@ -335,7 +382,9 @@ function CRFClassBar_OnUpdate(self, elapsed)
         local box = self.boxes[i];
         if ( box.expires ) then
             if ( box.expires <= now ) then
-                CRFClassBar_Update();   -- ran out (the totem update event follows)
+                -- ran out: its box goes (and the room, out of combat, if it was the last)
+                CRF_UpdateClassBarRoom();
+                CRFClassBar_Update();
                 return;
             end
             box.timer:SetText(CRFClassBar_FormatTime(box.expires - now));
@@ -351,12 +400,20 @@ function CRFClassBar_OnUpdate(self, elapsed)
 end
 
 bar:SetScript("OnShow", CRFClassBar_Update);
-bar:SetScript("OnEvent", function(self)
+bar:SetScript("OnEvent", function(self, event)
+    if ( event == "PLAYER_REGEN_DISABLED" ) then
+        combatRoom = true;      -- fires just before the lockdown: the last chance to make room
+    elseif ( event == "PLAYER_REGEN_ENABLED" ) then
+        combatRoom = nil;
+    end
+    CRF_UpdateClassBarRoom();
     if ( self:IsVisible() ) then
         CRFClassBar_Update();
     end
 end);
 bar:RegisterEvent("PLAYER_ENTERING_WORLD");
+bar:RegisterEvent("PLAYER_REGEN_DISABLED");
+bar:RegisterEvent("PLAYER_REGEN_ENABLED");
 bar:RegisterEvent("PLAYER_TOTEM_UPDATE");
 bar:RegisterEvent("RUNE_POWER_UPDATE");
 bar:RegisterEvent("RUNE_TYPE_UPDATE");
@@ -396,22 +453,30 @@ function CRF_UpdateClassBar()
     bar:SetParent(owner);
     bar:SetFrameStrata(owner:GetFrameStrata());
     bar:ClearAllPoints();
-    bar:SetPoint("TOPLEFT", owner, "BOTTOMLEFT", INSET, -PADDING);
-    CRFClassBar_SetBoxSize(owner.crfClassBarRoom - 2 * PADDING);
+    bar:SetPoint("TOPLEFT", owner, "BOTTOMLEFT", 0, 0);
+    CRFClassBar_SetBoxSize(owner.crfClassBarRoom);
     bar:Show();
     CRFClassBar_Update();
 end
 
--- Hide Player Frame switched on or off (out of combat): the frames make room
--- for the boxes, or close the gap again. (The first call always lays out, so
--- the saved setting wins over anything laid out before it was loaded.)
-local roomKind;
+-- Room under your frame only while something shows (and through combat, as
+-- frames can't move then). Called on totem / rune changes, combat start and
+-- end, and when Hide Player Frame is switched; out of combat only (in combat
+-- the room stays as it is). The first call always lays out, so the saved
+-- setting wins over anything laid out before it was loaded.
 function CRF_UpdateClassBarRoom()
-    local kind = CRFClassBar_GetKind() or false;
-    if ( kind == roomKind or InCombatLockdown() ) then
+    if ( InCombatLockdown() ) then
         return;
     end
-    roomKind = kind;
+    local kind = CRFClassBar_GetKind();
+    local wanted = false;
+    if ( kind and (combatRoom or CRFClassBar_IsInUse(kind, GetTime())) ) then
+        wanted = kind;
+    end
+    if ( wanted == roomKind ) then
+        return;
+    end
+    roomKind = wanted;
     for groupNum=1, MAX_RAID_GROUPS do
         local groupFrame = _G["CompactRaidGroup"..groupNum];
         if ( groupFrame ) then

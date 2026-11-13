@@ -1,5 +1,26 @@
 # Compact Raid Frames (3.3.5a) - changelog
 
+## 1.29
+
+- The totem and rune boxes now hug your frame:
+  - They touch your frame and each other, starting at its left edge, and the
+    frame below touches them. No gaps above, below or between them.
+  - They're bigger, using the space the gaps took: 20 px at the default frame
+    size (16 px before).
+  - On the smallest frames the boxes are too small for the time: they show
+    the icon and sweep only.
+- Boxes only for what's up, no empty placeholders:
+  - Shamans: a box for each totem that is down, packed from the left in the
+    totem bar's order (earth, fire, water, air).
+  - Death Knights: the runes while they're in use (in combat, or while one
+    is coming back), and the ghoul's box while it's up.
+- The room under your frame is only made while there's something to show,
+  and closes again when the last totem (or rune, or ghoul) is gone. Frames
+  can't move during combat, so the room is also made as combat starts (the
+  last moment frames can still move) and stays until combat ends.
+- The raid size preview still shows every box, empty ones dim in their
+  element's colour, under the first placeholder, so you can see their size.
+
 ## 1.28
 
 - Totem timers and Death Knight runes no longer float where the hidden player
