@@ -1182,17 +1182,18 @@ function CompactUnitFrame_UpdateDebuffs(frame)
         index = index + 1;
     end
 
-    if ( frame.optionTable.displayOnlyDispellableDebuffs ) then
-        filter = "RAID";
-    end
+    -- Display Only Dispellable Debuffs: the types you can dispel with the spells
+    -- you have learned (CRF_CanDispelDebuffType), not the game's class-wide filter.
+    local onlyDispellable = frame.optionTable.displayOnlyDispellableDebuffs;
 
     index = 1;
     --Now, we display all normal debuffs.
     if ( frame.optionTable.displayNonBossDebuffs ) then
         while ( frameNum <= maxDebuffs ) do
-            local debuffName = UnitDebuff(frame.displayedUnit, index, filter);
+            local debuffName, _, _, _, debuffType = UnitDebuff(frame.displayedUnit, index, filter);
             if ( debuffName ) then
-                if ( CompactUnitFrame_UtilShouldDisplayDebuff(frame.displayedUnit, index, filter) and not CompactUnitFrame_UtilIsBossAura(frame.displayedUnit, index, filter, false) and
+                if ( (not onlyDispellable or CRF_CanDispelDebuffType(debuffType)) and
+                    CompactUnitFrame_UtilShouldDisplayDebuff(frame.displayedUnit, index, filter) and not CompactUnitFrame_UtilIsBossAura(frame.displayedUnit, index, filter, false) and
                     not CompactUnitFrame_UtilIsPriorityDebuff(frame.displayedUnit, index, filter)) then
                     local debuffFrame = frame.debuffFrames[frameNum];
                     CompactUnitFrame_UtilSetDebuff(debuffFrame, frame.displayedUnit, index, filter, false, false);
@@ -1212,6 +1213,97 @@ function CompactUnitFrame_UpdateDebuffs(frame)
 end
 
 local dispellableDebuffTypes = { Magic = true, Curse = true, Disease = true, Poison = true};
+
+--========================================================================--
+-- The debuff types you can dispel, from the dispel spells you have actually
+-- learned (your spellbook, and your pet's for a Felhunter's Devour Magic).
+-- The game's "RAID" debuff filter goes by class alone, so a priest who hadn't
+-- learned Dispel Magic yet, or a shaman without the Cleanse Spirit talent, was
+-- shown debuffs they couldn't remove. Used by Display Only Dispellable Debuffs
+-- and the dispel type icons.
+--========================================================================--
+local CRF_DISPEL_SPELLS = {
+    [527]   = { Magic = true },                                  -- Dispel Magic (priest)
+    [528]   = { Disease = true },                                -- Cure Disease (priest)
+    [552]   = { Disease = true },                                -- Abolish Disease (priest)
+    [1152]  = { Poison = true, Disease = true },                 -- Purify (paladin)
+    [4987]  = { Poison = true, Disease = true, Magic = true },   -- Cleanse (paladin)
+    [526]   = { Poison = true, Disease = true },                 -- Cure Toxins (shaman)
+    [51886] = { Poison = true, Disease = true, Curse = true },   -- Cleanse Spirit (shaman talent)
+    [2782]  = { Curse = true },                                  -- Remove Curse (druid)
+    [8946]  = { Poison = true },                                 -- Cure Poison (druid)
+    [2893]  = { Poison = true },                                 -- Abolish Poison (druid)
+    [475]   = { Curse = true },                                  -- Remove Curse (mage)
+    [19505] = { Magic = true },                                  -- Devour Magic (Felhunter)
+};
+local playerDispelTypes = {};
+local dispelSpellNames;     -- localized name -> types (ranks share a name)
+
+local function CRF_AddDispelTypes(bookType, numSpells, found)
+    for i=1, numSpells do
+        local types = dispelSpellNames[GetSpellName(i, bookType) or ""];
+        if ( types ) then
+            for debuffType in pairs(types) do
+                found[debuffType] = true;
+            end
+        end
+    end
+end
+
+-- Read the spellbooks again; true if what you can dispel changed.
+function CRF_UpdatePlayerDispelTypes()
+    if ( not dispelSpellNames ) then
+        dispelSpellNames = {};
+        for spellID, types in pairs(CRF_DISPEL_SPELLS) do
+            local name = GetSpellInfo(spellID);
+            if ( name ) then
+                dispelSpellNames[name] = types;
+            end
+        end
+    end
+    local found = {};
+    local numSpells = 0;
+    for tab=1, GetNumSpellTabs() do
+        local _, _, offset, numTabSpells = GetSpellTabInfo(tab);
+        numSpells = max(numSpells, (offset or 0) + (numTabSpells or 0));
+    end
+    CRF_AddDispelTypes(BOOKTYPE_SPELL or "spell", numSpells, found);
+    CRF_AddDispelTypes(BOOKTYPE_PET or "pet", HasPetSpells() or 0, found);
+    local changed = false;
+    for debuffType in pairs(dispellableDebuffTypes) do
+        if ( (found[debuffType] or false) ~= (playerDispelTypes[debuffType] or false) ) then
+            changed = true;
+        end
+    end
+    playerDispelTypes = found;
+    return changed;
+end
+
+function CRF_CanDispelDebuffType(debuffType)
+    return debuffType and playerDispelTypes[debuffType] or false;
+end
+
+-- Learning a spell or talent, respeccing, or a pet coming or going: show the
+-- right debuffs straight away (aura frames are plain frames: fine in combat).
+local dispelWatcher = CreateFrame("Frame");
+dispelWatcher:RegisterEvent("PLAYER_LOGIN");
+dispelWatcher:RegisterEvent("SPELLS_CHANGED");
+dispelWatcher:RegisterEvent("LEARNED_SPELL_IN_TAB");
+dispelWatcher:RegisterEvent("PET_BAR_UPDATE");
+dispelWatcher:RegisterEvent("UNIT_PET");
+dispelWatcher:SetScript("OnEvent", function(self, event, unit)
+    if ( event == "UNIT_PET" and unit ~= "player" ) then
+        return;
+    end
+    if ( CRF_UpdatePlayerDispelTypes() and CRF_ForEachCompactUnitFrame ) then
+        CRF_ForEachCompactUnitFrame(function(frame)
+            if ( frame.displayedUnit and frame.optionTable ) then
+                CompactUnitFrame_UpdateAuras(frame);
+            end
+        end);
+    end
+end);
+
 function CompactUnitFrame_UpdateDispellableDebuffs(frame)
     if ( not frame.dispelDebuffFrames or not frame.optionTable.displayDispelDebuffs ) then
         CompactUnitFrame_HideAllDispelDebuffs(frame);
@@ -1227,10 +1319,10 @@ function CompactUnitFrame_UpdateDispellableDebuffs(frame)
 
     local index = 1;
     local frameNum = 1;
-    local filter = "RAID";  --Only dispellable debuffs.
+    local filter = nil;     -- every debuff; the types you can dispel (CRF_CanDispelDebuffType)
     while ( frameNum <= frame.maxDispelDebuffs ) do
         local name, rank, icon, count, debuffType, duration, expirationTime, unitCaster, canStealOrPurge, _, spellId = UnitDebuff(frame.displayedUnit, index, filter);
-        if ( dispellableDebuffTypes[debuffType] and not frame["hasDispel"..debuffType] ) then
+        if ( dispellableDebuffTypes[debuffType] and CRF_CanDispelDebuffType(debuffType) and not frame["hasDispel"..debuffType] ) then
             frame["hasDispel"..debuffType] = true;
             local dispellDebuffFrame = frame.dispelDebuffFrames[frameNum];
             CompactUnitFrame_UtilSetDispelDebuff(dispellDebuffFrame, debuffType, index)

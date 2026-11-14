@@ -105,7 +105,7 @@
       </OnLoad>
       <OnEnter>
         GameTooltip:SetOwner(self, "ANCHOR_RIGHT");
-        GameTooltip:SetUnitDebuff(self:GetParent():GetParent().displayedUnit, self:GetID(), "RAID");
+        GameTooltip:SetUnitDebuff(self:GetParent():GetParent().displayedUnit, self:GetID());
       </OnEnter>
       <OnLeave function="CompactAuraTemplate_OnLeave" />
     </Scripts>

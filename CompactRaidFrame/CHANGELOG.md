@@ -1,5 +1,24 @@
 # Compact Raid Frames (3.3.5a) - changelog
 
+## 1.30
+
+- Display Only Dispellable Debuffs, and the small dispel type icons in the
+  top right of a frame, now go by the dispel spells you have actually learned.
+  They used to ask the game, whose "dispellable" filter goes by class alone, so
+  a priest who hadn't learned Dispel Magic yet, or a shaman without the Cleanse
+  Spirit talent, was shown debuffs they couldn't remove.
+  - Priest: diseases with Cure Disease or Abolish Disease, magic with Dispel
+    Magic.
+  - Paladin: poisons and diseases with Purify, and magic too with Cleanse.
+  - Shaman: poisons and diseases with Cure Toxins, and curses too with the
+    Cleanse Spirit talent.
+  - Druid: poisons with Cure Poison or Abolish Poison, curses with Remove
+    Curse.
+  - Mage: curses with Remove Curse.
+  - Warlock: magic while your Felhunter (Devour Magic) is out.
+- This updates straight away when you learn a spell or talent, respec, or
+  summon or dismiss a pet, in combat too.
+
 ## 1.29
 
 - The totem and rune boxes now hug your frame:

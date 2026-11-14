@@ -590,7 +590,7 @@ function GameTooltip:SetText(t) self.__tttext = t end
 function GameTooltip:AddLine(t) end
 function GameTooltip:SetUnitBuff() end
 function GameTooltip:SetTotem(slot) self.__totem = slot end
-function GameTooltip:SetUnitDebuff() end
+function GameTooltip:SetUnitDebuff(unit, index, filter) self.__debuff = { unit = unit, index = index, filter = filter } end
 function GameTooltip_Hide() GameTooltip:Hide() end
 
 DEFAULT_CHAT_FRAME = { messages = {} }
@@ -735,7 +735,26 @@ function SetRaidTarget() end
 function GetReadyCheckStatus() return nil end
 function GetReadyCheckTimeLeft() return 0 end
 function HasLFGRestrictions() return nil end
-function GetSpellInfo(id) return "Spell" .. tostring(id), "", "Interface\\Icons\\X" end
+-- real names for the dispel spells, so spellbook lookups by name work like the client
+local SPELL_NAMES = { [527] = "Dispel Magic", [528] = "Cure Disease", [552] = "Abolish Disease", [1152] = "Purify", [4987] = "Cleanse",
+  [526] = "Cure Toxins", [51886] = "Cleanse Spirit", [2782] = "Remove Curse", [8946] = "Cure Poison", [2893] = "Abolish Poison",
+  [475] = "Remove Curse", [19505] = "Devour Magic", [6603] = "Attack", [2050] = "Lesser Heal" }
+function GetSpellInfo(id) return SPELL_NAMES[id] or ("Spell" .. tostring(id)), "", "Interface\\Icons\\X" end
+-- spellbooks: H.state.spellbook / H.state.petSpellbook = lists of spell IDs (the paladin knows Cleanse)
+BOOKTYPE_SPELL, BOOKTYPE_PET = "spell", "pet"
+H.state.spellbook = { 6603, 4987 }
+function GetNumSpellTabs() return 2 end
+function GetSpellTabInfo(tab)       -- "General" holds Attack; the class tab holds the rest
+  local book = H.state.spellbook or {}
+  if tab == 1 then return "General", "", 0, math.min(1, #book) end
+  return "Class", "", math.min(1, #book), math.max(0, #book - 1)
+end
+function GetSpellName(index, bookType)
+  local book = (bookType == "pet") and H.state.petSpellbook or H.state.spellbook
+  local id = book and book[index]
+  if id then return (GetSpellInfo(id)), "Rank 1" end
+end
+function HasPetSpells() local book = H.state.petSpellbook return (book and #book > 0) and #book or nil, book and "DEMON" end
 function GetItemInfo() return nil end
 function GetLocale() return H.locale or "enUS" end
 function GetTime() return H.now end

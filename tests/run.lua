@@ -1115,6 +1115,82 @@ if scenario == "all" or scenario == "features" then
   check(not PlayerFrame:IsShown(), "on again: hidden")
 
   ----------------------------------------------------------------------
+  section("Dispellable debuffs follow the spells you have learned")
+  do
+  local prof = GetActiveRaidProfile()
+  local me = H.state.player
+  local savedParty, savedClass, savedBook = H.state.party, me.class, H.state.spellbook
+  H.setParty({ { "Helga", "ROGUE" } })
+  H.state.party[1].debuffs = { { spellId = 7321, type = "Magic" }, { spellId = 3, type = "Poison" }, { spellId = 4, type = "Disease" },
+    { spellId = 5, type = "Curse" }, { spellId = 6 } }
+  SetRaidProfileOption(prof, "displayOnlyDispellableDebuffs", true)
+  CompactUnitFrameProfiles_ApplyCurrentSettings(); CRF_RelayGroupRosterUpdate(); H.RunUpdates(0.05, 2)
+  local function helga()
+    local found
+    CRF_ForEachCompactUnitFrame(function(f) if f.unit == "party1" and f:IsVisible() then found = f end end)
+    return found
+  end
+  local function shown(f)       -- debuff types shown, and the dispel type icons
+    local debuffs, icons = {}, {}
+    for _, d in ipairs(f.debuffFrames) do
+      if d:IsShown() then debuffs[#debuffs + 1] = select(5, UnitDebuff(f.displayedUnit, d:GetID(), d.filter)) or "none" end
+    end
+    for _, d in ipairs(f.dispelDebuffFrames) do
+      if d:IsShown() then icons[#icons + 1] = (d.icon:GetTexture() or ""):match("Debuff(%a+)$") end
+    end
+    return table.concat(debuffs, ","), table.concat(icons, ",")
+  end
+  local function learn(class, book, pet)
+    me.class = class; H.state.spellbook = book; H.state.petSpellbook = pet
+    H.FireEvent("SPELLS_CHANGED"); H.RunUpdates(0.05, 1)
+  end
+  local f = helga()
+  local d, i = shown(f)
+  check(d == "Magic,Poison,Disease" and i == "Magic,Poison,Disease", "a paladin with Cleanse: magic, poison and disease (3 shown), with their type icons")
+  learn("PRIEST", { 6603, 2050 })
+  d, i = shown(f)
+  check(d == "" and i == "", "a priest who hasn't learned a dispel yet: none of them (the game's filter goes by class)")
+  learn("PRIEST", { 6603, 2050, 528 })
+  d, i = shown(f)
+  check(d == "Disease" and i == "Disease", "learns Cure Disease: the disease")
+  learn("PRIEST", { 6603, 2050, 528, 527 })
+  d, i = shown(f)
+  check(d == "Magic,Disease" and i == "Magic,Disease", "learns Dispel Magic: magic too (Chilled)")
+  local icon = f.dispelDebuffFrames[1]
+  icon:GetScript("OnEnter")(icon)
+  local t = GameTooltip.__debuff
+  check(t and t.filter == nil and select(5, UnitDebuff(t.unit, t.index)) == "Magic", "a type icon's tooltip shows that debuff")
+  SetRaidProfileOption(prof, "displayOnlyDispellableDebuffs", false); CompactUnitFrameProfiles_ApplyCurrentSettings(); H.RunUpdates(0.05, 1)
+  d, i = shown(f)
+  check(d == "Magic,Poison,Disease" and i == "Magic,Disease", "option off: debuffs whatever their type, type icons still only what you can dispel")
+  SetRaidProfileOption(prof, "displayOnlyDispellableDebuffs", true); CompactUnitFrameProfiles_ApplyCurrentSettings(); H.RunUpdates(0.05, 1)
+  learn("SHAMAN", { 6603, 526 })
+  d, i = shown(f)
+  check(d == "Poison,Disease" and i == "Poison,Disease", "a shaman with Cure Toxins: poison and disease")
+  learn("SHAMAN", { 6603, 51886 })
+  d, i = shown(f)
+  check(d == "Poison,Disease,Curse" and i == "Poison,Disease,Curse", "with the Cleanse Spirit talent: curses too")
+  learn("WARLOCK", { 6603 })
+  d, i = shown(f)
+  check(d == "" and i == "", "a warlock with no pet: none")
+  H.state.petSpellbook = { 19505 }; H.FireEvent("UNIT_PET", "player"); H.RunUpdates(0.05, 1)
+  d, i = shown(f)
+  check(d == "Magic" and i == "Magic", "a Felhunter out (Devour Magic): magic")
+  H.inCombat = true
+  H.state.petSpellbook = nil; H.FireEvent("UNIT_PET", "player"); H.RunUpdates(0.05, 1)
+  d, i = shown(f)
+  check(d == "" and i == "" and #H.blocked == 0, "the Felhunter dismissed in combat: gone straight away, nothing blocked")
+  H.inCombat = false; H.FireEvent("PLAYER_REGEN_ENABLED")
+  check(#H.errors == 0 and #H.blocked == 0, "no Lua errors, nothing blocked")
+  for _, e in ipairs(H.errors) do print("     " .. e) end
+  H.errors = {}; H.blocked = {}
+  learn(savedClass, savedBook, nil)
+  H.state.party = savedParty
+  CompactUnitFrameProfiles_CancelChanges(CompactUnitFrameProfiles)
+  CRF_RelayGroupRosterUpdate(); H.RunUpdates(0.05, 2)
+  end
+
+  ----------------------------------------------------------------------
   section("Totem and rune boxes under your own raid frame")
   do
   local bar = CompactRaidFrameClassBar
