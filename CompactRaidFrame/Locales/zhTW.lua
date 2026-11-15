@@ -72,6 +72,8 @@ L("COMPACT_UNIT_FRAME_PROFILE_DISPLAYONLYHEALERPOWERBARS", "只顯示治療者�
 L("CRF_REQUIRES_POWER_BARS", "需要開啟「顯示能量條」。")
 L("CRF_HIDE_PLAYER_FRAME", "顯示團隊框架時隱藏玩家框架")
 L("CRF_HIDE_PLAYER_FRAME_TOOLTIP", "團隊框架顯示時隱藏預設的玩家框架，因為你自己的團隊框架已顯示相同資訊。乘坐載具時仍會顯示。圖騰（或死亡騎士的符文）使用中時，會改以小方塊顯示在你自己的團隊框架正下方。寵物框架是玩家框架的一部分，會一併隱藏：開啟「顯示寵物」即可在團隊框架中看到你的寵物。")
+L("CRF_SHOW_RESTING", "在自己的框架上顯示休息狀態")
+L("CRF_SHOW_RESTING_TOOLTIP", "休息時（在旅店或城市中），你自己的團隊框架會像玩家框架一樣顯示：閃爍的金色光暈，以及右上角的 zzz 圖示。")
 L("CRF_OPTIONS_TAB_LAYOUT", "配置")
 L("CRF_GROUPS", "隊伍")
 L("CRF_GROUPS_COMBINE_VERTICAL", "合併隊伍（縱向）")

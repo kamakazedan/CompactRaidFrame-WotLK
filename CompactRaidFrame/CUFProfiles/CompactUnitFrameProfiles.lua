@@ -865,9 +865,15 @@ local function CreateGeneralPage(options, page)
 		CRF_IsHidePlayerFrameEnabled, CRF_SetHidePlayerFrameEnabled);
 	hidePlayerFrame:SetPoint("TOPLEFT", tabMouseover, "BOTTOMLEFT", 0, 0);
 
+	local showResting = CreateAccountCheckButton(page, "ShowResting",
+		CRF_SHOW_RESTING or "Show resting on your frame",
+		CRF_SHOW_RESTING_TOOLTIP,
+		CRF_IsShowRestingEnabled, CRF_SetShowRestingEnabled);
+	showResting:SetPoint("TOPLEFT", hidePlayerFrame, "BOTTOMLEFT", 0, 0);
+
 	-- Both anchors on the page's top edge: mixing TOPLEFT with a plain RIGHT
 	-- anchor would also pin the line's vertical centre and stretch it.
-	local ACCOUNT_ROWS = 4;
+	local ACCOUNT_ROWS = 5;
 	local divider = page:CreateTexture(page:GetName().."Divider", "ARTWORK");
 	divider:SetTexture(0.25, 0.25, 0.25);
 	divider:SetHeight(1);
@@ -875,7 +881,7 @@ local function CreateGeneralPage(options, page)
 	divider:SetPoint("TOPRIGHT", page, "TOPRIGHT", -2, -(ACCOUNT_ROWS * 26 + 6));
 
 	local displayPets = CreateProfileCheckButton(page, "DisplayPets", "displayPets");
-	displayPets:SetPoint("TOPLEFT", hidePlayerFrame, "BOTTOMLEFT", 0, -14);
+	displayPets:SetPoint("TOPLEFT", showResting, "BOTTOMLEFT", 0, -14);
 
 	local displayMainTankAndAssist = CreateProfileCheckButton(page, "DisplayMainTankAndAssist", "displayMainTankAndAssist");
 	displayMainTankAndAssist:SetPoint("TOPLEFT", displayPets, "BOTTOMLEFT", 0, 0);

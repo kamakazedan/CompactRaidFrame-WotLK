@@ -72,6 +72,8 @@ L("COMPACT_UNIT_FRAME_PROFILE_DISPLAYONLYHEALERPOWERBARS", "只显示治疗者�
 L("CRF_REQUIRES_POWER_BARS", "需要开启“显示能量条”。")
 L("CRF_HIDE_PLAYER_FRAME", "显示团队框体时隐藏玩家框体")
 L("CRF_HIDE_PLAYER_FRAME_TOOLTIP", "团队框体显示时隐藏默认的玩家框体，因为你自己的团队框体已显示相同信息。乘坐载具时仍会显示。图腾（或死亡骑士的符文）使用中时，会改为以小方块显示在你自己的团队框体正下方。宠物框体是玩家框体的一部分，会一起隐藏：开启“显示宠物”即可在团队框体中看到你的宠物。")
+L("CRF_SHOW_RESTING", "在自己的框体上显示休息状态")
+L("CRF_SHOW_RESTING_TOOLTIP", "休息时（在旅店或城市中），你自己的团队框体会像玩家框体一样显示：闪烁的金色光晕，以及右上角的 zzz 图标。")
 L("CRF_OPTIONS_TAB_LAYOUT", "布局")
 L("CRF_GROUPS", "小队")
 L("CRF_GROUPS_COMBINE_VERTICAL", "合并小队（纵向）")

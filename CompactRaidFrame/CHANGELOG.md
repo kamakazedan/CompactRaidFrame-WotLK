@@ -1,5 +1,21 @@
 # Compact Raid Frames (3.3.5a) - changelog
 
+## 1.31
+
+- Your own raid frame now shows when you're resting (in an inn or a city), the
+  way the player frame does:
+  - a gold glow round the edge of the frame, pulsing on the player frame's
+    timing (faint to full and back each second), in the player frame's rested
+    gold. It uses the art of the aggro glow.
+  - the zzz rest icon in the frame's top right corner, as big as the role
+    icon. Dispel type icons on your frame start to the left of it.
+- It shows on your frame only, in a party or a raid, and not on the raid size
+  preview's placeholders.
+- If you have aggro while resting (a training dummy in a city, say), the aggro
+  glow shows instead so its threat colour reads true; the zzz stays.
+- Turn it off with "Show resting on your frame" on the General tab (on by
+  default).
+
 ## 1.30
 
 - Display Only Dispellable Debuffs, and the small dispel type icons in the

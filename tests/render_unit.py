@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Close-up of one raid unit frame from run.lua's dump-unit scenario.
 usage: render_unit.py out.png title subtitle tsv [title subtitle tsv ...]"""
-import sys
+import os, sys
 from PIL import Image, ImageDraw, ImageFont
 S = 3
 F = "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf"
@@ -50,6 +50,27 @@ def draw_box(d, X, Y, l, t, r, b, text, extra, under=BG):
 BUFF = [(40, 160, 220), (60, 180, 90), (150, 110, 220)]
 DEBUFF = [(150, 40, 160), (200, 160, 40), (60, 140, 60)]
 DISPEL = [(50, 110, 230), (40, 170, 40), (170, 120, 40)]
+HIGHLIGHTS = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "CompactRaidFrame", "Texture", "RAIDFRAME", "Raid-FrameHighlights.blp")
+def rest_glow(im, X, Y, l, t, r, b, alpha):
+    """The frame's aggro glow art (Raid-FrameHighlights, Raid-AggroFrame coords),
+    tinted the player frame's rested gold and faded like the addon does."""
+    tex = Image.open(HIGHLIGHTS).convert("RGBA")
+    w, h = tex.size
+    crop = tex.crop((round(0.0078125 * w), round(0.0078125 * h), round(0.5546875 * w), round(0.2734375 * h)))
+    crop = crop.resize((X(r) - X(l), Y(b) - Y(t)), Image.BILINEAR)
+    cr, cg, cb, ca = crop.split()
+    tint = Image.merge("RGBA", (cr.point(lambda v: int(v * 1.0)), cg.point(lambda v: int(v * 0.88)), cb.point(lambda v: int(v * 0.25)),
+                                ca.point(lambda v: int(v * alpha))))
+    im.paste(tint, (X(l), Y(t)), tint)
+def zzz(d, X, Y, l, t, r, b):
+    """A stand-in for Blizzard's rest icon (UI-StateIcon): three gold z's."""
+    size = b - t
+    for i, (fx, fy, fs) in enumerate(((0.02, 0.38, 0.62), (0.40, 0.14, 0.48), (0.68, -0.04, 0.38))):
+        f = ImageFont.truetype(FB, max(1, int(size * fs * S)))
+        x, y = X(l + size * fx), Y(t + size * fy)
+        for ox, oy in ((-1, 0), (1, 0), (0, -1), (0, 1)):
+            d.text((x + ox * S // 2, y + oy * S // 2), "z", font=f, fill=(40, 25, 0))
+        d.text((x, y), "z", font=f, fill=(255, 215, 70))
 def render(rows, title, sub):
     get = lambda k: next((r for r in rows if r[0] == k), None)
     fr = get("frame"); fw, fh = fr[4], fr[5]
@@ -105,6 +126,14 @@ def render(rows, title, sub):
     for row in [r for r in rows if r[0] == "box"]:
         _, txt, l, t, r, b, _, extra = row
         draw_box(d, X, Y, l, t, r, b, txt, extra)
+    rg = get("restglow")
+    if rg:
+        _, _, l, t, r, b, _, extra = rg
+        rest_glow(im, X, Y, l, t, r, b, float(extra))
+    ri = get("resticon")
+    if ri:
+        _, _, l, t, r, b, _, _ = ri
+        zzz(d, X, Y, l, t, r, b)
     role = get("role")
     if role:
         _, _, l, t, r, b, _, _ = role

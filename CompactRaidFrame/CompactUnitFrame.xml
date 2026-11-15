@@ -143,6 +143,8 @@
             <FontString name="$parentName" inherits="GameFontHighlightSmall" parentKey="name" wordwrap="false" />
             <Texture name="$parentRoleIcon" hidden="true" parentKey="roleIcon" />
             <Texture name="$parentAggroHighlight" parentKey="aggroHighlight" />
+            <Texture name="$parentRestGlow" parentKey="restGlow" hidden="true" />
+            <Texture name="$parentRestIcon" parentKey="restIcon" hidden="true" />
             <Texture name="$parentMyHealAbsorb" parentKey="myHealAbsorb" />
             <Texture name="$parentTotalAbsorbOverlay" parentKey="totalAbsorbOverlay" />
             <Texture name="$parentMyHealAbsorbLeftShadow" parentKey="myHealAbsorbLeftShadow" file="Interface\AddOns\CompactRaidFrame\Texture\RAIDFRAME\Absorb-Edge" />

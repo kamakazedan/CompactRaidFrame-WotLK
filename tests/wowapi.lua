@@ -679,7 +679,7 @@ local function auraReturns(a)
 end
 function UnitBuff(u, index, filter) local l = auraList(u, "buffs", filter) return auraReturns(l and l[index]) end
 function UnitDebuff(u, index, filter) local l = auraList(u, "debuffs", filter) return auraReturns(l and l[index]) end
-function UnitThreatSituation() return 0 end
+function UnitThreatSituation(u) local i = unitInfo(u) return i and i.threat or 0 end   -- 0 none, 1-3 rising
 function UnitDetailedThreatSituation() return nil end
 function GetThreatStatusColor() return 1, 0, 0 end
 function UnitSelectionColor() return 0, 1, 0 end
@@ -718,6 +718,7 @@ function GetRuneCooldown(id)
 end
 COMBAT_TEXT_RUNE_BLOOD, COMBAT_TEXT_RUNE_UNHOLY, COMBAT_TEXT_RUNE_FROST, COMBAT_TEXT_RUNE_DEATH = "Blood Rune", "Unholy Rune", "Frost Rune", "Death Rune"
 function UnitAffectingCombat() return H.inCombat and 1 or nil end
+function IsResting() return H.state.resting and 1 or nil end      -- H.state.resting: in an inn or a city
 function InCombatLockdown() return H.inCombat and 1 or nil end
 function IsRaidLeader() return #S.raid > 0 and 1 or nil end
 function IsPartyLeader() return 1 end

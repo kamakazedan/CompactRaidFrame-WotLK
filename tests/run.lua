@@ -1115,6 +1115,90 @@ if scenario == "all" or scenario == "features" then
   check(not PlayerFrame:IsShown(), "on again: hidden")
 
   ----------------------------------------------------------------------
+  section("Resting shows on your own frame")
+  do
+  local me = H.state.player
+  local savedParty, savedRaid = H.state.party, H.state.raid
+  local function near(a, b) return a and b and math.abs(a - b) < 0.05 end
+  local function frameFor(match)
+    local found
+    CRF_ForEachCompactUnitFrame(function(f) if not found and f.unit and f:IsVisible() and match(f.unit) then found = f end end)
+    return found
+  end
+  local function ownFrame() return frameFor(function(u) return UnitIsUnit(u, "player") and not u:find("pet") end) end
+  local function overlaps(a, b)
+    local al, ar = H.hspan(a); local ab, at = H.vspan(a)
+    local bl, br = H.hspan(b); local bb, bt = H.vspan(b)
+    return al < br - 0.01 and bl < ar - 0.01 and ab < bt - 0.01 and bb < at - 0.01
+  end
+  local opt = _G["CompactUnitFrameProfilesOptionsGeneralShowResting"]
+  local divT = select(2, H.vspan(_G["CompactUnitFrameProfilesOptionsGeneralDivider"]))
+  check(opt and opt:GetChecked() and select(1, H.vspan(opt)) >= divT and CRF_IsShowRestingEnabled(),
+    "General tab: \"Show resting on your frame\", on by default, with the account options")
+  H.setParty({ { "Helga", "ROGUE" } })
+  H.state.party[1].debuffs = { { spellId = 7321, type = "Magic" } }
+  CompactUnitFrameProfiles_ApplyCurrentSettings(); CRF_RelayGroupRosterUpdate(); H.RunUpdates(0.05, 2)
+  local own, other = ownFrame(), frameFor(function(u) return u == "party1" end)
+  check(own and other and not own.restGlow:IsShown() and not own.restIcon:IsShown(), "not resting: nothing")
+  H.state.resting = true; H.FireEvent("PLAYER_UPDATE_RESTING"); H.RunUpdates(0.05, 1)
+  check(own.restGlow:IsVisible() and own.restIcon:IsVisible() and not other.restGlow:IsShown() and not other.restIcon:IsShown(),
+    "resting (an inn or a city): the glow and the zzz on my frame only")
+  local v = own.restGlow.__vertex
+  check(v and near(v[1], 1) and near(v[2], 0.88) and near(v[3], 0.25) and own.restGlow:GetTexture() == own.aggroHighlight:GetTexture(),
+    "the glow: the aggro glow's art in the player frame's rested gold")
+  local fl, fr = H.hspan(own); local fb, ft = H.vspan(own)
+  local il, ir = H.hspan(own.restIcon); local ib, it = H.vspan(own.restIcon)
+  check(own.restIcon:GetTexture() == "Interface\\CharacterFrame\\UI-StateIcon" and near(ir - il, 12) and near(it - ib, 12)
+    and near(ir, fr - 3) and near(it, ft - 2), "the zzz: Blizzard's rest icon, as big as the role icon, in the top right corner")
+  local lo, hi = 1, 0
+  for _ = 1, 30 do H.RunUpdates(0.05, 1); local a = own.restGlow:GetAlpha(); lo = math.min(lo, a); hi = math.max(hi, a) end
+  check(lo < 0.3 and hi > 0.95, string.format("it pulses like the player frame (%.2f to %.2f each second)", lo, hi))
+  me.debuffs = { { spellId = 7321, type = "Magic" } }
+  H.FireEvent("UNIT_AURA", "player"); H.RunUpdates(0.05, 1)
+  local mine, theirs = own.dispelDebuffFrames[1], other.dispelDebuffFrames[1]
+  check(mine:IsShown() and not overlaps(mine, own.restIcon) and select(2, H.hspan(mine)) <= il + 0.05 and near(select(2, H.hspan(theirs)), select(2, H.hspan(other)) - 3),
+    "a dispel type icon on my frame moves left of the zzz (others stay in the corner)")
+  H.inCombat = true
+  H.state.resting = nil; H.FireEvent("PLAYER_UPDATE_RESTING"); H.RunUpdates(0.05, 1)
+  check(not own.restGlow:IsShown() and not own.restIcon:IsShown() and near(select(2, H.hspan(mine)), fr - 3) and #H.blocked == 0,
+    "no longer resting (in combat here): both go, the dispel icon moves back, nothing blocked")
+  H.inCombat = false; H.FireEvent("PLAYER_REGEN_ENABLED")
+  H.state.resting = true; H.FireEvent("PLAYER_UPDATE_RESTING"); H.RunUpdates(0.05, 1)
+  -- hitting a training dummy in a city: resting and on its threat list
+  H.inCombat = true; me.threat = 3; H.FireEvent("UNIT_THREAT_SITUATION_UPDATE", "player"); H.RunUpdates(0.05, 1)
+  check(own.aggroHighlight:IsShown() and not own.restGlow:IsShown() and own.restIcon:IsVisible(),
+    "aggro while resting (a training dummy in a city): the aggro glow shows instead, the zzz stays")
+  me.threat = nil; H.FireEvent("UNIT_THREAT_SITUATION_UPDATE", "player"); H.RunUpdates(0.05, 1)
+  check(not own.aggroHighlight:IsShown() and own.restGlow:IsVisible() and #H.blocked == 0, "aggro gone: the rest glow is back")
+  H.inCombat = false; H.FireEvent("PLAYER_REGEN_ENABLED")
+  opt:Click(); H.RunUpdates(0.05, 1)
+  check(CRF_IsShowRestingEnabled() == false and not own.restGlow:IsShown() and not own.restIcon:IsShown(), "option off: nothing while resting")
+  opt:Click(); H.RunUpdates(0.05, 1)
+  check(CRF_IsShowRestingEnabled() and own.restGlow:IsVisible() and own.restIcon:IsVisible(), "on again: back")
+  -- raid: my frame shows a raidN token
+  H.setRaid({ { "Tanky", "WARRIOR", 1 }, { "Hunt", "HUNTER", 1 } }); me.subgroup = 1; table.insert(H.state.raid, me)
+  CRF_RelayGroupRosterUpdate(); H.RunUpdates(0.05, 2)
+  own = ownFrame()
+  local others = 0
+  CRF_ForEachCompactUnitFrame(function(f) if f ~= own and f:IsVisible() and f.restGlow and f.restGlow:IsShown() then others = others + 1 end end)
+  check(own and own.unit:find("^raid") and own.restGlow:IsVisible() and own.restIcon:IsVisible() and others == 0, "in a raid: on my frame (" .. tostring(own and own.unit) .. ") only")
+  -- raid size preview: every placeholder shows me, none of them glow
+  CRF_SetRaidPreviewSize(10); H.RunUpdates(0.05, 2)
+  local glowing = 0
+  CRF_ForEachCompactUnitFrame(function(f) if f:IsVisible() and f.restGlow and f.restGlow:IsShown() then glowing = glowing + 1 end end)
+  check(glowing == 0, "not on raid size preview placeholders")
+  CRF_SetRaidPreviewSize(nil); H.RunUpdates(0.05, 2)
+  own = ownFrame()
+  check(own and own.restGlow:IsVisible(), "back on my frame after the preview")
+  check(#H.errors == 0 and #H.blocked == 0, "no Lua errors, nothing blocked")
+  for _, e in ipairs(H.errors) do print("     " .. e) end
+  H.errors = {}; H.blocked = {}
+  H.state.resting = nil; me.debuffs = nil; me.subgroup = nil
+  H.state.party, H.state.raid = savedParty, savedRaid
+  H.FireEvent("PLAYER_UPDATE_RESTING"); CRF_RelayGroupRosterUpdate(); H.RunUpdates(0.05, 2)
+  end
+
+  ----------------------------------------------------------------------
   section("Dispellable debuffs follow the spells you have learned")
   do
   local prof = GetActiveRaidProfile()
@@ -1860,6 +1944,15 @@ if scenario == "dump-closeup" then
     H.state.runeTypes = { [6] = 4 }
     H.state.totems = { [1] = { name = "Risen Ghoul", start = now - 15, duration = 60, icon = "ghoul" } }
   end
+  -- CRF_CLOSEUP_REST = bright | faint: resting, the glow at either end of its pulse;
+  -- CRF_CLOSEUP_DEBUFF = a debuff type on you (a resto shaman can cleanse it)
+  local rest = os.getenv("CRF_CLOSEUP_REST")
+  if rest then H.state.resting = true; H.FireEvent("PLAYER_UPDATE_RESTING") end
+  local debuffType = os.getenv("CRF_CLOSEUP_DEBUFF")
+  if debuffType then
+    H.state.spellbook = { 6603, 51886 }; H.FireEvent("SPELLS_CHANGED")
+    me.debuffs = { { spellId = 7321, type = debuffType } }
+  end
   for slot = 1, 4 do H.FireEvent("PLAYER_TOTEM_UPDATE", slot) end
   H.FireEvent("RUNE_POWER_UPDATE", 1); H.FireEvent("UNIT_AURA", "player"); H.RunUpdates(0.05, 2)
   local own, nxt
@@ -1879,6 +1972,14 @@ if scenario == "dump-closeup" then
   row("frame", own); row("health", own.healthBar); row("power", own.powerBar)
   row("name", own.name, own.name:GetText()); row("status", own.statusText, own.statusText:GetText()); row("powertext", own.powerText, own.powerText:GetText())
   row("role", own.roleIcon)
+  if own.restGlow and own.restGlow:IsVisible() then
+    own.restGlow:SetAlpha(rest == "faint" and 55 / 255 or 1)
+    row("restglow", own.restGlow, "", string.format("%.3f", own.restGlow:GetAlpha()))
+    row("resticon", own.restIcon)
+  end
+  for _, a in ipairs(own.buffFrames) do row("buff", a) end
+  for _, a in ipairs(own.debuffFrames) do row("debuff", a) end
+  for _, a in ipairs(own.dispelDebuffFrames) do row("dispel", a) end
   local ELEMENT = { [1] = "1,0.45,0.15", [2] = "0.55,0.75,0.25", [3] = "0.25,0.6,1", [4] = "0.75,0.75,1" }
   local bar = CompactRaidFrameClassBar
   for i = 1, bar.count or 0 do
@@ -2164,6 +2265,7 @@ if scenario == "persist-write" then
   _G["CompactUnitFrameProfilesOptionsGeneralRaidStylePartyFrames"]:Click()   -- off
   _G["CompactUnitFrameProfilesOptionsGeneralManagerTabMouseover"]:Click()     -- off
   _G["CompactUnitFrameProfilesOptionsGeneralHidePlayerFrame"]:Click()         -- off
+  _G["CompactUnitFrameProfilesOptionsGeneralShowResting"]:Click()             -- off
   check(#H.errors == 0, "no errors")
 end
 if scenario == "persist-read" then
@@ -2176,6 +2278,8 @@ if scenario == "persist-read" then
   check(CRF_IsManagerTabFadeEnabled() == false and not _G["CompactUnitFrameProfilesOptionsGeneralManagerTabMouseover"]:GetChecked(), "tab-on-mouseover setting still off after reload")
   check(CRF_IsHidePlayerFrameEnabled() == false and not _G["CompactUnitFrameProfilesOptionsGeneralHidePlayerFrame"]:GetChecked()
     and PlayerFrame:IsShown(), "hide-player-frame setting still off after reload (frame shown)")
+  check(CRF_IsShowRestingEnabled() == false and not _G["CompactUnitFrameProfilesOptionsGeneralShowResting"]:GetChecked(),
+    "show-resting setting still off after reload")
   check(#H.errors == 0, "no errors")
   for _, e in ipairs(H.errors) do print("     " .. e) end
 end

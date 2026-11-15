@@ -450,3 +450,22 @@ function CRF_SetHidePlayerFrameEnabled(enabled)
 		CRF_UpdatePlayerFrameVisibility();
 	end
 end
+
+-- "Show resting on your frame": the rested glow and zzz on your own raid
+-- frame (CompactUnitFrame_UpdateRestIndicator). Account-wide; nil = on.
+function CRF_IsShowRestingEnabled()
+	local value = CUF_CONFIG and CUF_CONFIG.showResting;
+	if ( value == nil ) then
+		return true;
+	end
+	return value and true or false;
+end
+
+function CRF_SetShowRestingEnabled(enabled)
+	if ( CUF_CONFIG ) then
+		CUF_CONFIG.showResting = enabled and true or false;
+	end
+	if ( CRF_UpdateRestIndicators ) then
+		CRF_UpdateRestIndicators();
+	end
+end

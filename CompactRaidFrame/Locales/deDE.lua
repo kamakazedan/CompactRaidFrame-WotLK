@@ -72,6 +72,8 @@ L("COMPACT_UNIT_FRAME_PROFILE_DISPLAYONLYHEALERPOWERBARS", "Nur Ressourcenbalken
 L("CRF_REQUIRES_POWER_BARS", "Erfordert \"Ressourcenbalken anzeigen\".")
 L("CRF_HIDE_PLAYER_FRAME", "Spielerfenster bei Schlachtzugsfenstern ausblenden")
 L("CRF_HIDE_PLAYER_FRAME_TOOLTIP", "Blendet Euer Spielerfenster aus, solange die Schlachtzugsfenster angezeigt werden, da Euer eigenes Schlachtzugsfenster dasselbe zeigt. In Fahrzeugen bleibt es sichtbar. Stattdessen zeigen kleine Kästchen direkt unter Eurem eigenen Schlachtzugsfenster Eure Totems (oder die Runen eines Todesritters), solange sie in Gebrauch sind. Das Begleiterfenster gehört zum Spielerfenster und wird mit ausgeblendet: Aktiviert \"Begleiter anzeigen\", um Euren Begleiter in den Schlachtzugsfenstern zu sehen.")
+L("CRF_SHOW_RESTING", "Erholung am eigenen Fenster zeigen")
+L("CRF_SHOW_RESTING_TOOLTIP", "Solange Ihr Euch erholt (in einem Gasthaus oder einer Stadt), zeigt Euer eigenes Schlachtzugsfenster das wie das Spielerfenster: mit einem pulsierenden goldenen Leuchten und dem Zzz-Symbol oben rechts.")
 L("CRF_OPTIONS_TAB_LAYOUT", "Anordnung")
 L("CRF_GROUPS", "Gruppen")
 L("CRF_GROUPS_COMBINE_VERTICAL", "Gruppen vereint (vertikal)")

@@ -242,6 +242,10 @@ function CompactRaidFrameContainer_LayoutFrames(self)
     if ( CRF_UpdateClassBar ) then
         CRF_UpdateClassBar();
     end
+    -- the rested glow: frames that kept showing you as a preview started or ended
+    if ( CRF_UpdateRestIndicators ) then
+        CRF_UpdateRestIndicators();
+    end
 end
 
 function CompactRaidFrameContainer_UpdateBorder(self)

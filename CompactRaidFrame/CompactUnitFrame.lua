@@ -378,6 +378,7 @@ function CompactUnitFrame_UpdateAll(frame)
         CompactUnitFrame_UpdateAuras(frame);
         CompactUnitFrame_UpdateCenterStatusIcon(frame);
     end
+    CompactUnitFrame_UpdateRestIndicator(frame);
 end
 
 function CompactUnitFrame_UpdateInVehicle(frame)
@@ -688,6 +689,92 @@ function CompactUnitFrame_UpdateSelectionHighlight(frame)
     end
 end
 
+--========================================================================--
+-- Resting (an inn or a city): your own frame shows it as the player frame
+-- does, with its rested gold pulsing round the edge (the aggro glow's art) and
+-- the zzz icon in the top right corner. Not on raid size preview placeholders.
+-- "Show resting on your frame" on the General tab (CRF_IsShowRestingEnabled).
+--========================================================================--
+local REST_R, REST_G, REST_B = 1.0, 0.88, 0.25;    -- PlayerFrame_UpdateStatus's rested colour
+local restingFrames = {};
+
+-- The player frame's status pulse (PlayerFrame_OnUpdate): over half a second
+-- the glow brightens from 55/255 to full, then fades back.
+local restPulse = CreateFrame("Frame");
+restPulse:Hide();
+restPulse.counter, restPulse.sign = 0, 1;
+restPulse:SetScript("OnUpdate", function(self, elapsed)
+    local counter = self.counter + elapsed;
+    if ( counter > 0.5 ) then
+        self.sign = -self.sign;
+    end
+    counter = math.fmod(counter, 0.5);
+    self.counter = counter;
+    local alpha;
+    if ( self.sign == 1 ) then
+        alpha = (55 + counter * 400) / 255;
+    else
+        alpha = (255 - counter * 400) / 255;
+    end
+    for frame in pairs(restingFrames) do
+        frame.restGlow:SetAlpha(alpha);
+    end
+end);
+
+-- The aggro glow uses the same art in the same place: while it's up (hitting a
+-- training dummy in a city, say) the rest glow gives way so the threat colour
+-- reads true. The zzz stays.
+local function CompactUnitFrame_SyncRestGlow(frame)
+    if ( not restingFrames[frame] ) then
+        return;
+    end
+    if ( frame.aggroHighlight and frame.aggroHighlight:IsShown() ) then
+        frame.restGlow:Hide();
+    else
+        frame.restGlow:Show();
+    end
+end
+
+function CompactUnitFrame_UpdateRestIndicator(frame)
+    if ( not (frame.restGlow and frame.restIcon) ) then
+        return;
+    end
+    local unit = frame.unit;
+    local show = unit and IsResting() and CRF_IsShowRestingEnabled and CRF_IsShowRestingEnabled()
+        and not strfind(unit, "target") and UnitIsUnit(unit, "player")
+        and not (CRF_GetRaidPreviewSize and CRF_GetRaidPreviewSize());
+    if ( show ) then
+        frame.restIcon:Show();
+        restingFrames[frame] = true;
+        CompactUnitFrame_SyncRestGlow(frame);
+        restPulse:Show();
+    else
+        frame.restGlow:Hide();
+        frame.restIcon:Hide();
+        restingFrames[frame] = nil;
+        if ( not next(restingFrames) ) then
+            restPulse:Hide();
+        end
+    end
+    -- the dispel type icons start left of the zzz while it shows
+    local firstDispel = frame.dispelDebuffFrames and frame.dispelDebuffFrames[1];
+    if ( firstDispel and frame.restIcon:GetWidth() > 0 ) then
+        firstDispel:ClearAllPoints();
+        firstDispel:SetPoint("TOPRIGHT", frame, "TOPRIGHT", show and -(4 + frame.restIcon:GetWidth()) or -3, -2);
+    end
+end
+
+function CRF_UpdateRestIndicators()
+    if ( CRF_ForEachCompactUnitFrame ) then
+        CRF_ForEachCompactUnitFrame(CompactUnitFrame_UpdateRestIndicator);
+    end
+end
+
+local restWatcher = CreateFrame("Frame");
+restWatcher:RegisterEvent("PLAYER_UPDATE_RESTING");
+restWatcher:RegisterEvent("PLAYER_ENTERING_WORLD");
+restWatcher:SetScript("OnEvent", CRF_UpdateRestIndicators);
+
 function CompactUnitFrame_UpdateAggroHighlight(frame)
     if ( not frame.aggroHighlight ) then
         return;
@@ -696,6 +783,7 @@ function CompactUnitFrame_UpdateAggroHighlight(frame)
         if ( not frame.optionTable.playLoseAggroHighlight ) then
            frame.aggroHighlight:Hide();
         end
+        CompactUnitFrame_SyncRestGlow(frame);
         return;
     end
 
@@ -706,6 +794,7 @@ function CompactUnitFrame_UpdateAggroHighlight(frame)
     else
         frame.aggroHighlight:Hide();
     end
+    CompactUnitFrame_SyncRestGlow(frame);
 end
 
 local function SetBorderColor(frame, r, g, b, a)
@@ -1784,6 +1873,8 @@ function DefaultCompactUnitFrameSetup(frame)
     frame.statusText = frame.overlay.statusText;
     frame.roleIcon = frame.overlay.roleIcon;
     frame.aggroHighlight = frame.overlay.aggroHighlight;
+    frame.restGlow = frame.overlay.restGlow;
+    frame.restIcon = frame.overlay.restIcon;
     frame.myHealAbsorb = frame.overlay.myHealAbsorb;
     frame.myHealAbsorbLeftShadow = frame.overlay.myHealAbsorbLeftShadow;
     frame.myHealAbsorbRightShadow = frame.overlay.myHealAbsorbRightShadow;
@@ -1893,6 +1984,18 @@ function DefaultCompactUnitFrameSetup(frame)
     frame.aggroHighlight:SetTexture("Interface\\AddOns\\CompactRaidFrame\\Texture\\RaidFrame\\Raid-FrameHighlights");
     frame.aggroHighlight:SetTexCoord(unpack(texCoords["Raid-AggroFrame"]));
     frame.aggroHighlight:SetAllPoints(frame);
+
+    -- resting (CompactUnitFrame_UpdateRestIndicator): the aggro glow in the
+    -- player frame's rested gold, and its zzz icon, as big as the role icon
+    frame.restGlow:SetTexture("Interface\\AddOns\\CompactRaidFrame\\Texture\\RaidFrame\\Raid-FrameHighlights");
+    frame.restGlow:SetTexCoord(unpack(texCoords["Raid-AggroFrame"]));
+    frame.restGlow:SetVertexColor(REST_R, REST_G, REST_B);
+    frame.restGlow:SetAllPoints(frame);
+    frame.restIcon:SetTexture("Interface\\CharacterFrame\\UI-StateIcon");
+    frame.restIcon:SetTexCoord(0.0625, 0.4375, 0.0625, 0.4375);
+    frame.restIcon:ClearAllPoints();
+    frame.restIcon:SetPoint("TOPRIGHT", frame, "TOPRIGHT", -3, -2);
+    frame.restIcon:SetSize(12, 12);
 
     frame.centerStatusIcon:SetParent(frame.healthBar);
 

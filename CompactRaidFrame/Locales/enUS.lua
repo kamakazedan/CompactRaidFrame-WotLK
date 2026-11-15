@@ -109,6 +109,8 @@ L("COMPACT_UNIT_FRAME_PROFILE_DISPLAYONLYHEALERPOWERBARS", "Display Only Healer 
 L("CRF_REQUIRES_POWER_BARS", "Requires \"Display Power Bars\".")
 L("CRF_HIDE_PLAYER_FRAME", "Hide player frame when raid frames are shown")
 L("CRF_HIDE_PLAYER_FRAME_TOOLTIP", "Hides your default player frame while the raid frames are on screen, since your own raid frame shows the same. It stays visible in vehicles. Instead, small boxes right under your own raid frame show your totems (or a Death Knight's runes) while they're in use. Your pet frame is part of the player frame and hides with it: tick Display Pets to see your pet in the raid frames.")
+L("CRF_SHOW_RESTING", "Show resting on your frame")
+L("CRF_SHOW_RESTING_TOOLTIP", "While you're resting (in an inn or a city), your own raid frame shows it the way the player frame does: a pulsing gold glow, and the zzz icon in its top right corner.")
 L("CRF_OPTIONS_TAB_LAYOUT", "Layout")
 L("CRF_GROUPS", "Groups")
 L("CRF_GROUPS_COMBINE_VERTICAL", "Combine Groups (Vertical)")
